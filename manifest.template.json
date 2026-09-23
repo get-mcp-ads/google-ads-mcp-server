@@ -9,11 +9,11 @@
     "url": "https://www.getmcpads.com"
   },
   "homepage": "https://www.getmcpads.com/tools/google-ads",
-  "documentation": "https://github.com/getmcpads-com/google-ads-mcp-server#readme",
-  "support": "https://github.com/getmcpads-com/google-ads-mcp-server/issues",
+  "documentation": "https://github.com/get-mcp-ads/google-ads-mcp-server#readme",
+  "support": "https://github.com/get-mcp-ads/google-ads-mcp-server/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/getmcpads-com/google-ads-mcp-server"
+    "url": "https://github.com/get-mcp-ads/google-ads-mcp-server"
   },
   "icon": "icon.png",
   "license": "Apache-2.0",

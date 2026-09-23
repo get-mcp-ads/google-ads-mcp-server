@@ -2,7 +2,7 @@
   "serverInfo": {
     "name": "@getmcpads/google-ads-mcp-server",
     "title": "Google Ads MCP server: 35 read tools, 10 opt-in preview-first writes.",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "websiteUrl": "https://www.getmcpads.com/tools/google-ads",
     "icons": [
       {

@@ -12,7 +12,7 @@ on:
         description: "Existing release tag whose package is already published on npm"
         required: true
         type: string
-        default: "v2.0.0"
+        default: "v2.0.1"
 
 permissions:
   contents: read
@@ -74,7 +74,7 @@ jobs:
         run: |
           NAME=$(node -p "require('./server.json').name")
           VERSION=$(node -p "require('./server.json').version")
-          LISTED=$(curl -sf "https://registry.modelcontextprotocol.io/v0/servers?search=$NAME" \
+          LISTED=$(curl -sf "https://registry.modelcontextprotocol.io/v0.1/servers?search=$NAME" \
             | node -e "
               let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
                 const servers=(JSON.parse(s).servers||[]);

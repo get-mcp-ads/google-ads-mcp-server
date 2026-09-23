@@ -1,6 +1,6 @@
 {
   "name": "@getmcpads/google-ads-mcp-server",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "mcpName": "com.getmcpads/google-ads",
   "description": "Google Ads MCP server: 35 read tools, 10 opt-in preview-first writes.",
   "license": "Apache-2.0",
@@ -73,11 +73,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/getmcpads-com/google-ads-mcp-server.git"
+    "url": "git+https://github.com/get-mcp-ads/google-ads-mcp-server.git"
   },
   "homepage": "https://www.getmcpads.com/tools/google-ads",
   "bugs": {
-    "url": "https://github.com/getmcpads-com/google-ads-mcp-server/issues"
+    "url": "https://github.com/get-mcp-ads/google-ads-mcp-server/issues"
   },
   "author": "Emmanuel, getmcpads (https://www.getmcpads.com)",
   "publishConfig": {

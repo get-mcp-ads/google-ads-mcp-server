@@ -6,8 +6,8 @@
 
 Explore performance, research keywords and prepare campaign changes from your MCP client.
 
-[![Release](https://img.shields.io/github/v/release/getmcpads-com/google-ads-mcp-server?color=2448e5)](https://github.com/getmcpads-com/google-ads-mcp-server/releases/latest)
-[![CI](https://github.com/getmcpads-com/google-ads-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/getmcpads-com/google-ads-mcp-server/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/getmcpads-com/google-ads-mcp-server?color=2448e5)](https://github.com/get-mcp-ads/google-ads-mcp-server/releases/latest)
+[![CI](https://github.com/get-mcp-ads/google-ads-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/get-mcp-ads/google-ads-mcp-server/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522.12-brightgreen.svg)](package.json)
 
@@ -27,7 +27,7 @@ Run locally with your own platform credentials and a client that supports stdio 
 
 ## What's new
 
-**[v2.0.0: Native tools and security update](https://github.com/getmcpads-com/google-ads-mcp-server/releases/tag/v2.0.0) · September 20, 2026**
+**[v2.0.1: Native tools and security update](https://github.com/get-mcp-ads/google-ads-mcp-server/releases/tag/v2.0.1) · September 20, 2026**
 
 - Add descending image/video asset pagination.
 - Add account-scoped upload processing reads and return the native upload ID.
@@ -35,18 +35,18 @@ Run locally with your own platform credentials and a client that supports stdio 
 - Require Node.js 22.12 or newer and check Node 22/24 in CI.
 - Update vulnerable dependencies and regenerate the MCP catalog.
 
-[Full changelog](CHANGELOG.md) · [Source synchronization details](SOURCE_SYNC.md) · [All releases](https://github.com/getmcpads-com/google-ads-mcp-server/releases)
+[Full changelog](CHANGELOG.md) · [Source synchronization details](SOURCE_SYNC.md) · [All releases](https://github.com/get-mcp-ads/google-ads-mcp-server/releases)
 
 ### Upgrade notes
 
-Requires **Node.js 22.12 or newer**. CI covers Node 22 and 24. Version 2.0.0 drops Node 18 and 20 support. Read the current tool schemas before reusing saved arguments. Writes remain optional and require explicit confirmation. Hosted creative integrations and MCP Apps UI are outside this release.
+Requires **Node.js 22.12 or newer**. CI covers Node 22 and 24. Version 2.0.1 drops Node 18 and 20 support. Read the current tool schemas before reusing saved arguments. Writes remain optional and require explicit confirmation. Hosted creative integrations and MCP Apps UI are outside this release.
 
 ## Install this release
 
 This is a GitHub source release. npm and MCP Registry versions are published separately. The commands below select this exact version; unpinned `npx` examples later in this document select the version currently available on npm.
 
 ```bash
-git clone --branch v2.0.0 --depth 1 https://github.com/getmcpads-com/google-ads-mcp-server.git
+git clone --branch v2.0.1 --depth 1 https://github.com/get-mcp-ads/google-ads-mcp-server.git
 cd google-ads-mcp-server
 npm ci
 npm run build
@@ -175,7 +175,7 @@ claude mcp add google-ads --env GOOGLE_ADS_DEVELOPER_TOKEN=... --env GOOGLE_ADS_
 ### From source
 
 ```bash
-git clone https://github.com/getmcpads-com/google-ads-mcp-server.git
+git clone https://github.com/get-mcp-ads/google-ads-mcp-server.git
 cd google-ads-mcp-server
 npm install && npm run build
 cp .env.example .env   # then fill in your credentials
@@ -387,6 +387,6 @@ Run `npm run bundle -- /path/to/output` to build a `.mcpb` desktop bundle from t
 
 ## More from getmcpads
 
-[Meta Ads](https://github.com/getmcpads-com/meta-ads-mcp-server) · [Google Analytics 4](https://github.com/getmcpads-com/google-analytics-mcp-server) · [Google Search Console](https://github.com/getmcpads-com/google-search-console-mcp-server) · [TikTok Ads](https://github.com/getmcpads-com/tiktok-ads-mcp-server) · [Pinterest Ads](https://github.com/getmcpads-com/pinterest-ads-mcp-server) · [X Ads](https://github.com/getmcpads-com/x-ads-mcp-server)
+[Meta Ads](https://github.com/get-mcp-ads/meta-ads-mcp-server) · [Google Analytics 4](https://github.com/get-mcp-ads/google-analytics-mcp-server) · [Google Search Console](https://github.com/get-mcp-ads/google-search-console-mcp-server) · [TikTok Ads](https://github.com/get-mcp-ads/tiktok-ads-mcp-server) · [Pinterest Ads](https://github.com/get-mcp-ads/pinterest-ads-mcp-server) · [X Ads](https://github.com/get-mcp-ads/x-ads-mcp-server)
 
 Maintained by **Emmanuel** at [getmcpads](https://www.getmcpads.com). Questions: [hello@getmcpads.com](mailto:hello@getmcpads.com).

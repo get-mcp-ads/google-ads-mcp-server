@@ -6,7 +6,7 @@ Thanks for considering a contribution. This project is maintained by
 ## Getting set up
 
 ```bash
-git clone https://github.com/getmcpads-com/google-ads-mcp-server.git
+git clone https://github.com/get-mcp-ads/google-ads-mcp-server.git
 cd google-ads-mcp-server
 npm install
 cp .env.example .env
