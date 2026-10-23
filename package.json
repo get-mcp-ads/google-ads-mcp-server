@@ -27,7 +27,8 @@
     "prepublishOnly": "npm run typecheck && npm run build && node scripts/generate-catalog.mjs && npm test",
     "test:unit": "vitest run",
     "catalog": "npm run build && node scripts/generate-catalog.mjs",
-    "bundle": "npm run catalog && node scripts/build-mcpb.mjs"
+    "bundle": "npm run catalog && node scripts/build-mcpb.mjs",
+    "release-history": "node scripts/release-history.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",

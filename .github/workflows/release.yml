@@ -93,8 +93,9 @@ jobs:
             echo "CHANGELOG.md has no section for $VERSION."
             exit 1
           fi
+          TITLE=$(sed -nE "s/^## ${VERSION//./\\.} - [0-9]{4}-[0-9]{2}-[0-9]{2} - (.+)$/\1/p" CHANGELOG.md | head -1)
           gh release create "$RELEASE_TAG" --verify-tag --latest \
-            --title "$RELEASE_TAG" --notes-file release-notes.md
+            --title "$RELEASE_TAG${TITLE:+: $TITLE}" --notes-file release-notes.md
 
       - name: Install mcp-publisher
         run: |

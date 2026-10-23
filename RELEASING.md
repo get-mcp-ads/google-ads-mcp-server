@@ -27,3 +27,5 @@ git push origin v2.1.0
 5. Publishes `server.json` to the MCP Registry, authenticated through the `getmcpads.com` DNS key in the `MCP_DNS_PRIVATE_KEY` secret. The registry reads `mcpName` from the published npm package, which is why npm comes first.
 
 Each step skips cleanly when its target already holds the version. When a step fails, fix the cause and run the workflow again from the Actions tab with **Run workflow**, giving the existing tag.
+
+Before tagging, add the release to CHANGELOG.md as `## X.Y.Z - YYYY-MM-DD - Title`, then run `npm run release-history`. The README shows every release from the changelog, and the test suite fails when it falls behind.
