@@ -1,8 +1,8 @@
 {
   "serverInfo": {
     "name": "@getmcpads/google-ads-mcp-server",
-    "title": "Google Ads MCP server: 35 read tools, 10 opt-in preview-first writes.",
-    "version": "2.0.1",
+    "title": "Google Ads MCP server: 35 read tools, 13 opt-in preview-first writes.",
+    "version": "2.1.0",
     "websiteUrl": "https://www.getmcpads.com/tools/google-ads",
     "icons": [
       {
@@ -3573,7 +3573,7 @@
     {
       "name": "google_ads_remove_video_upload",
       "title": "google ads remove video upload",
-      "description": "Remove a video upload owned by the selected ad account. Deletes the uploaded YouTube video and can break ads referencing it. Preview and matching expectedPlanHash required. Google v25 marks title/description immutable; this tool does not pretend to edit them.",
+      "description": "Remove a video upload owned by the selected ad account. Deletes the uploaded YouTube video and can break ads referencing it. Preview and matching expectedPlanHash required. Google v26 marks title/description immutable; this tool does not pretend to edit them.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3668,7 +3668,7 @@
     {
       "name": "google_ads_apply_plan",
       "title": "google ads apply plan",
-      "description": "Preview, validate and atomically apply a Google Ads v25 build/change plan: campaigns, budgets, ad groups, RSA/Display/Demand Gen ads, image/text/YouTube assets, PMax asset groups and links, keywords, geographic/language targeting listing groups and conversion action configuration (no conversion event uploads). Native REST camelCase fields; amounts are integer micros of the explicitly stated currency. Supports temporary negative resource IDs for ordered creation in one transaction. No VIDEO campaign creation (Google API restriction), billing, account access changes, customer lists or conversion uploads. New campaigns/groups/ads are always PAUSED. Call first without confirm to inspect the plan and get planHash; validateOnly asks Google without applying; execution requires confirm and the matching expectedPlanHash. Read back results with google_ads_run_gaql. Never retry a creation after an uncertain network result before checking its name/IDs.",
+      "description": "Preview, validate and atomically apply a Google Ads v26 build/change plan: campaigns, budgets, ad groups, RSA/Display/Demand Gen ads, image/text/YouTube assets, PMax asset groups and links, keywords, geographic/language targeting listing groups and conversion action configuration (no conversion event uploads). Native REST camelCase fields; amounts are integer micros of the explicitly stated currency. Supports temporary negative resource IDs for ordered creation in one transaction. No VIDEO campaign creation (Google API restriction), billing, account access changes, customer lists or conversion uploads. New campaigns/groups/ads are always PAUSED. Call first without confirm to inspect the plan and get planHash; validateOnly asks Google without applying; execution requires confirm and the matching expectedPlanHash. Read back results with google_ads_run_gaql. Never retry a creation after an uncertain network result before checking its name/IDs.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3815,10 +3815,12 @@
         "properties": {
           "customerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Google Ads customer ID, with or without dashes."
           },
           "campaignId": {
             "type": "string",
+            "pattern": "^\\d+$",
             "description": "Campaign ID."
           },
           "status": {
@@ -3832,6 +3834,7 @@
           },
           "loginCustomerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Manager account, if the customer sits under an MCC."
           },
           "confirm": {
@@ -3902,6 +3905,7 @@
         "properties": {
           "customerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Google Ads customer ID, with or without dashes."
           },
           "name": {
@@ -3926,6 +3930,7 @@
           },
           "loginCustomerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
           },
           "brandGuidelinesEnabled": {
@@ -4019,10 +4024,12 @@
         "properties": {
           "customerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Google Ads customer ID, with or without dashes."
           },
           "budgetId": {
             "type": "string",
+            "pattern": "^\\d+$",
             "description": "Campaign budget ID (campaign_budget.id)."
           },
           "dailyAmount": {
@@ -4032,6 +4039,7 @@
           },
           "loginCustomerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
           },
           "confirm": {
@@ -4102,10 +4110,12 @@
         "properties": {
           "customerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Google Ads customer ID, with or without dashes."
           },
           "campaignId": {
             "type": "string",
+            "pattern": "^\\d+$",
             "description": "Campaign ID."
           },
           "name": {
@@ -4116,6 +4126,7 @@
           },
           "loginCustomerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
           },
           "confirm": {
@@ -4178,6 +4189,261 @@
       }
     },
     {
+      "name": "google_ads_rename_adgroup",
+      "title": "google ads rename adgroup",
+      "description": "Rename a Google Ads ad group. The name is the only thing that changes: delivery, bids and assets are untouched. Previews by default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
+            "description": "Google Ads customer ID, with or without dashes."
+          },
+          "adGroupId": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Ad group ID."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 254,
+            "description": "New ad group name."
+          },
+          "loginCustomerId": {
+            "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
+            "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+          }
+        },
+        "required": [
+          "customerId",
+          "adGroupId",
+          "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "google_ads_rename_asset_group",
+      "title": "google ads rename asset group",
+      "description": "Rename a Google Ads Performance Max asset group. The name is the only thing that changes: delivery, bids and assets are untouched. Previews by default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
+            "description": "Google Ads customer ID, with or without dashes."
+          },
+          "assetGroupId": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Performance Max asset group ID."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "New Performance Max asset group name."
+          },
+          "loginCustomerId": {
+            "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
+            "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+          }
+        },
+        "required": [
+          "customerId",
+          "assetGroupId",
+          "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "google_ads_rename_account",
+      "title": "google ads rename account",
+      "description": "Rename a Google Ads account (its descriptive name). Nothing else changes. Previews by default.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
+            "description": "Google Ads customer ID, with or without dashes."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "New descriptive name of the account."
+          },
+          "loginCustomerId": {
+            "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
+            "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
+          },
+          "confirm": {
+            "type": "boolean",
+            "description": "Set to true to actually apply the change. Without it, the tool only previews."
+          }
+        },
+        "required": [
+          "customerId",
+          "name"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              },
+              {
+                "type": "array",
+                "items": {}
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Original tool result: parsed JSON when the text is JSON, otherwise the text or multiple MCP content blocks. Provider fields depend on the selected query."
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false,
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
       "name": "google_ads_update_campaign_schedule",
       "title": "google ads update campaign schedule",
       "description": "Change the start or end date of a Google Ads campaign. Dates are YYYY-MM-DD in the account time zone. Previews by default.",
@@ -4186,10 +4452,12 @@
         "properties": {
           "customerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Google Ads customer ID, with or without dashes."
           },
           "campaignId": {
             "type": "string",
+            "pattern": "^\\d+$",
             "description": "Campaign ID."
           },
           "startDate": {
@@ -4204,6 +4472,7 @@
           },
           "loginCustomerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
           },
           "confirm": {
@@ -4273,10 +4542,12 @@
         "properties": {
           "customerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Google Ads customer ID, with or without dashes."
           },
           "adGroupId": {
             "type": "string",
+            "pattern": "^\\d+$",
             "description": "Ad group ID."
           },
           "status": {
@@ -4290,6 +4561,7 @@
           },
           "loginCustomerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
           },
           "confirm": {
@@ -4360,10 +4632,12 @@
         "properties": {
           "customerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Google Ads customer ID, with or without dashes."
           },
           "adGroupId": {
             "type": "string",
+            "pattern": "^\\d+$",
             "description": "Ad group ID."
           },
           "cpcBid": {
@@ -4373,6 +4647,7 @@
           },
           "loginCustomerId": {
             "type": "string",
+            "pattern": "^\\d[\\d-]*\\d$|^\\d$",
             "description": "Manager account ID, when the customer sits under an MCC. Omit otherwise."
           },
           "confirm": {

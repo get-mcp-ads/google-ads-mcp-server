@@ -18,7 +18,8 @@ you ask us not to.
 
 | Version | Supported |
 | ------- | --------- |
-| 1.x     | ✅        |
+| 2.x     | ✅        |
+| 1.x     | ❌        |
 
 ## What this server does with your credentials
 
@@ -27,7 +28,11 @@ you ask us not to.
   to disk or logged, at any log level.
 - The access token is refreshed from the refresh token and **cached in memory
   until a minute before it expires**, so a working session does not re-request
-  it on every call.
+  it on every call. Reads and writes share it. When Google refuses the refresh
+  token for good (`invalid_grant`), the server says so once and stops asking
+  for a new token until it restarts.
+- With `GOOGLE_ADS_ACCOUNT_IDS` set, a call naming another customer is refused
+  before any request is sent.
 - **Two hosts are contacted, and only two**: `googleads.googleapis.com` for the
   API and `oauth2.googleapis.com` for the token exchange. *A test fails the
   build if a third host ever appears in the source.*

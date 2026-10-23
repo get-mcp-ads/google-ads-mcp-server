@@ -19,6 +19,6 @@ export function registerGoogleAds(server: McpServer, config: GoogleAdsConfig): v
 
   if (config.enableWrites) {
     registerGoogleAdsWrites(server as never, config as never);
-    logger.info("google-ads", "Registered 10 write tools (every one previews before it applies)");
+    logger.info("google-ads", "Registered 13 write tools (every one previews before it applies)");
   }
 }

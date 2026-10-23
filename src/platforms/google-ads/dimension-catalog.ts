@@ -1232,6 +1232,55 @@ const INTERACTION_DIMENSIONS: GoogleAdsDimensionDefinition[] = [
 // COMBINE ALL DIMENSIONS
 // ============================================
 
+// ============================================
+// SEARCH LIFT (API v26, FROM lift_measurement_config only)
+// ============================================
+
+const SEARCH_LIFT_DIMENSIONS: GoogleAdsDimensionDefinition[] = [
+  {
+    key: "liftMeasurementConfigId",
+    name: "Lift Study ID",
+    description: "ID of the lift measurement configuration (lift study)",
+    category: "entity",
+    apiField: "lift_measurement_config.lift_measurement_config_id",
+    isSegment: false,
+    isResourceAttribute: true,
+    compatibleResources: ["lift_measurement_config"],
+  },
+  {
+    key: "liftMeasurementConfigName",
+    name: "Lift Study Name",
+    description: "Name of the lift study",
+    category: "entity",
+    apiField: "lift_measurement_config.name",
+    isSegment: false,
+    isResourceAttribute: true,
+    compatibleResources: ["lift_measurement_config"],
+  },
+  {
+    key: "searchLiftKeywordBundle",
+    name: "Search Lift Keyword Bundle",
+    description: "Resource name of the keyword bundle measured in a Search Lift study",
+    category: "entity",
+    apiField: "segments.search_lift_keyword_bundle",
+    isSegment: true,
+    isResourceAttribute: false,
+    compatibleResources: ["lift_measurement_config"],
+  },
+  {
+    key: "searchProperty",
+    name: "Search Property",
+    description: "Search property where the measured search happened",
+    category: "network",
+    apiField: "segments.search_property",
+    isSegment: true,
+    isResourceAttribute: false,
+    compatibleResources: ["lift_measurement_config"],
+    incompatibleWith: ["segments.age_range", "segments.device", "segments.gender"],
+    possibleValues: ["GOOGLE_SEARCH", "YOUTUBE", "UNKNOWN", "UNSPECIFIED"],
+  },
+];
+
 export const GOOGLE_ADS_DIMENSION_CATALOG: GoogleAdsDimensionDefinition[] = [
   ...ENTITY_DIMENSIONS,
   ...TIME_DIMENSIONS,
@@ -1245,6 +1294,7 @@ export const GOOGLE_ADS_DIMENSION_CATALOG: GoogleAdsDimensionDefinition[] = [
   ...BIDDING_TARGET_DIMENSIONS,
   ...SHOPPING_DIMENSIONS,
   ...INTERACTION_DIMENSIONS,
+  ...SEARCH_LIFT_DIMENSIONS,
 ];
 
 // ============================================

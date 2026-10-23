@@ -6,3 +6,4 @@
 export { createServer, PACKAGE_VERSION } from "./server.js";
 export { loadConfig } from "./config.js";
 export type { GoogleAdsConfig } from "./config.js";
+export { nodeRuntimeWarning } from "./runtime-check.js";

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.1.0 - 2026-10-23
+
+- Add `google_ads_rename_account`, `google_ads_rename_adgroup` and `google_ads_rename_asset_group` from the hosted gateway. Each previews by default and sends the name alone on `confirm: true`.
+- Move from Google Ads API v25 to v26. The official v25 to v26 proto differences remove or rename no resource, field or enum this server builds. Raw GAQL follows v26.
+- Add the 15 Search Lift metrics of API v26, the `lift_measurement_config` resource, its ID and name, and the `search_lift_keyword_bundle` and `search_property` segments, with their compatibility rules.
+- Share one access token between reads and writes. A refused refresh token (`invalid_grant`, `admin_policy_enforced`) now produces one re-authorization message and no further token requests.
+- Add the optional `GOOGLE_ADS_ACCOUNT_IDS` allowlist, checked before every request and applied to account discovery. Unset, the server prints a recommendation on stderr. It becomes required in 3.0.0.
+- Keep accepting `1`, `yes` and `on` for `GOOGLE_ADS_ENABLE_WRITES`, with a deprecation line on stderr. 3.0.0 will accept only `true`.
+- Add timeouts to the write and token requests, bound every response body, and accept only numeric IDs in the simple write tools.
+- Require Node.js `^22.23.4 || ^24.22.1 || >=26.12.1`, warn on stderr at startup and in `npm run doctor` on older releases, and test Node 22, 24 and 26 in CI.
+- Update `@modelcontextprotocol/sdk` to 1.32.1 and regenerate the lockfile.
+- Publish from version tags with `release.yml`, which replaces `publish-mcp.yml`. Add Dependabot.
+
 ## 2.0.1 - 2026-09-23
 
 - Restore public source hosting under the get-mcp-ads GitHub organization.

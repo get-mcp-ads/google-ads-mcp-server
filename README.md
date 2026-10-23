@@ -10,7 +10,7 @@ Explore performance, research keywords and prepare campaign changes from your MC
 [![CI](https://github.com/get-mcp-ads/google-ads-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/get-mcp-ads/google-ads-mcp-server/actions/workflows/ci.yml)
 [![Smithery](https://smithery.ai/badge/getmcpads/getmcpads-google-ads)](https://smithery.ai/servers/getmcpads/getmcpads-google-ads)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%E2%89%A522.12-brightgreen.svg)](package.json)
+[![Node](https://img.shields.io/badge/node-22.23.4%20%7C%2024.22.1%20%7C%20%E2%89%A526.12.1-brightgreen.svg)](package.json)
 
 [Watch the film](https://www.getmcpads.com/home/film/get-mcp-ads-brand-film-1080p.mp4) · [What's new](#whats-new) · [Install](#install-this-release) · [Tool reference](#tools) · [Try hosted getmcpads](https://www.getmcpads.com/tools/google-ads?utm_source=github&utm_medium=readme&utm_campaign=google-ads)
 
@@ -22,32 +22,40 @@ Explore performance, research keywords and prepare campaign changes from your MC
 
 The film shows hosted getmcpads with sample data. Its MCP Apps, from creative galleries and alerts to Google Sheets exports and bulk launches, belong to the hosted product. This repository provides the standalone native API tools.
 
-**35 read tools** · **10 write tools**, disabled by default.
+**35 read tools** · **13 write tools**, disabled by default.
 
 Run locally with your own platform credentials and a client that supports stdio MCP, such as Claude Desktop, Claude Code or Cursor. Your requests go directly to the platform. For managed connections, including supported ChatGPT setups, use the hosted option.
 
 ## What's new
 
-**[v2.0.1: Native tools and security update](https://github.com/get-mcp-ads/google-ads-mcp-server/releases/tag/v2.0.1) · September 20, 2026**
+**[v2.1.0: Renames, Google Ads API v26 and Search Lift](https://github.com/get-mcp-ads/google-ads-mcp-server/releases/tag/v2.1.0) · October 23, 2026**
 
-- Add descending image/video asset pagination.
-- Add account-scoped upload processing reads and return the native upload ID.
-- Retain API v25, standalone MCC discovery and credential redirect protection.
-- Require Node.js 22.12 or newer and check Node 22/24 in CI.
-- Update vulnerable dependencies and regenerate the MCP catalog.
+- Add `google_ads_rename_account`, `google_ads_rename_adgroup` and `google_ads_rename_asset_group`. Each one previews, then changes the name alone on `confirm: true`.
+- Move to Google Ads API v26. None of the resources, fields or enums this server builds changed in v26.
+- Add the 15 Search Lift metrics of API v26 to the catalog, read from `lift_measurement_config`.
+- Report a revoked refresh token (`invalid_grant`) once, with the steps to authorize again, and stop asking Google for a new token.
+- Limit every tool to the customers listed in the optional `GOOGLE_ADS_ACCOUNT_IDS`.
+- Require a Node.js release that carries the October 2026 security fixes, and test Node 22, 24 and 26 in CI.
 
 [Full changelog](CHANGELOG.md) · [Source synchronization details](SOURCE_SYNC.md) · [All releases](https://github.com/get-mcp-ads/google-ads-mcp-server/releases)
 
 ### Upgrade notes
 
-Requires **Node.js 22.12 or newer**. CI covers Node 22 and 24. Version 2.0.1 drops Node 18 and 20 support. Read the current tool schemas before reusing saved arguments. Writes remain optional and require explicit confirmation. Hosted creative integrations and MCP Apps UI are outside this release.
+Requires **Node.js 22.23.4, 24.22.1 or 26.12.1**, or a newer release of one of these lines. Older releases lack the October 2026 security fixes, and the server prints a warning on stderr when it starts on one. CI covers Node 22, 24 and 26.
+
+This release makes no breaking change to the configuration. Two changes are announced for 3.0.0:
+
+- `GOOGLE_ADS_ACCOUNT_IDS` is optional in 2.x. When set, every tool is limited to the listed customers. When unset, the server starts as before and prints one line on stderr recommending it. It becomes required in 3.0.0.
+- `GOOGLE_ADS_ENABLE_WRITES` still accepts `1`, `yes` and `on`, and prints one deprecation line on stderr. Use `true`, the only value 3.0.0 will accept.
+
+The server pins **Google Ads API v26**. Raw queries sent through `google_ads_run_gaql` and `google_ads_run_readonly_rpc` follow v26 as well. A query that reads `customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled` or a hotel field of `ad_group_bid_modifier` must use the v26 names listed in [Google's v26 release notes](https://developers.google.com/google-ads/api/docs/release-notes). Writes remain optional and require explicit confirmation.
 
 ## Install this release
 
 This is a GitHub source release. npm and MCP Registry versions are published separately. The commands below select this exact version; unpinned `npx` examples later in this document select the version currently available on npm.
 
 ```bash
-git clone --branch v2.0.1 --depth 1 https://github.com/get-mcp-ads/google-ads-mcp-server.git
+git clone --branch v2.1.0 --depth 1 https://github.com/get-mcp-ads/google-ads-mcp-server.git
 cd google-ads-mcp-server
 npm ci
 npm run build
@@ -62,9 +70,10 @@ Configure your MCP client to run `node` with the absolute path to `dist/cli.js` 
 | | |
 |---|---|
 | **35 read tools** | Campaigns, ad groups, budgets, bidding strategies, search terms, landing pages, Performance Max assets and placements, Shopping, recommendations, change history |
-| **10 write tools** | Off by default. Status, budgets, bids, schedules, renames, campaign creation. Each one **previews before it applies** |
+| **13 write tools** | Off by default. Status, budgets, bids, schedules, renames, campaign creation. Each one **previews before it applies** |
 | **Full Keyword Planner** | Keyword ideas, historical metrics, forecasts, ad group themes, geo target suggestions |
-| **130 metrics, 84 dimensions** | With a compatibility matrix that catches invalid combinations before they hit the API |
+| **145 metrics, 88 dimensions** | With a compatibility matrix that catches invalid combinations before they hit the API |
+| **Google Ads API v26** | The version this release pins, including the Search Lift metrics read from `lift_measurement_config` |
 | **5 resources** | Live catalogues the model can read: metrics, dimensions, compatibility rules, 11 workflow recipes |
 | **GAQL and beyond** | `google_ads_run_gaql` for raw queries, and `google_ads_run_readonly_rpc` for the services GAQL cannot reach |
 
@@ -154,7 +163,8 @@ or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
         "GOOGLE_ADS_DEVELOPER_TOKEN": "your-developer-token",
         "GOOGLE_ADS_CLIENT_ID": "your-client-id",
         "GOOGLE_ADS_CLIENT_SECRET": "your-client-secret",
-        "GOOGLE_ADS_REFRESH_TOKEN": "your-refresh-token"
+        "GOOGLE_ADS_REFRESH_TOKEN": "your-refresh-token",
+        "GOOGLE_ADS_ACCOUNT_IDS": "123-456-7890"
       }
     }
   }
@@ -192,7 +202,8 @@ npm start
 | `GOOGLE_ADS_CLIENT_SECRET` | none | **Required.** OAuth client secret |
 | `GOOGLE_ADS_REFRESH_TOKEN` | none | **Required.** From the consent flow |
 | `GOOGLE_ADS_LOGIN_CUSTOMER_ID` | none | Optional. Manager (MCC) account ID. Resolved automatically when unset |
-| `GOOGLE_ADS_ENABLE_WRITES` | *unset* | Set to `1` to register the 10 write tools |
+| `GOOGLE_ADS_ACCOUNT_IDS` | *unset* | Recommended. Comma-separated customer IDs every tool is limited to. Unset, every account the credentials reach is available. Required in 3.0.0 |
+| `GOOGLE_ADS_ENABLE_WRITES` | *unset* | Set to `true` to register the 13 write tools. `1`, `yes` and `on` still work and print a deprecation line |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 
 Check your setup at any time:
@@ -205,8 +216,8 @@ npm run doctor
 
 ## Writes, and why they preview first
 
-Write tools are **disabled by default**. Enable them with `GOOGLE_ADS_ENABLE_WRITES=1`.
-Google's own server has none at all, so this is the part to read carefully.
+Write tools are **disabled by default**. Enable them with `GOOGLE_ADS_ENABLE_WRITES=true`.
+Google's own [Google Ads MCP server](https://developers.google.com/google-ads/api/docs/developer-toolkit/mcp-server) is read-only, so this is the part to read carefully.
 
 When enabled, every write tool returns a preview and changes nothing:
 
@@ -242,7 +253,7 @@ Two further guardrails:
 | `google_ads_update_campaign_budget` | Daily budget |
 | `google_ads_update_adgroup_bid` | Default CPC bid |
 | `google_ads_update_campaign_schedule` | Start and end dates |
-| `google_ads_rename_campaign` | Name only |
+| `google_ads_rename_campaign` / `google_ads_rename_adgroup` / `google_ads_rename_asset_group` / `google_ads_rename_account` | Name only. Ads cannot be renamed: Google keeps an ad's name immutable |
 | `google_ads_create_campaign` | Creates a budget, then a campaign, always `PAUSED` |
 
 ---
@@ -295,7 +306,7 @@ Every tool is listed below. See [server-card.json](server-card.json) for complet
 </details>
 
 <details>
-<summary><b>10 write tools</b></summary>
+<summary><b>13 write tools</b></summary>
 
 Disabled by default. Calls preview unless explicitly confirmed. Check the configuration and exact schema before use.
 
@@ -303,11 +314,14 @@ Disabled by default. Calls preview unless explicitly confirmed. Check the config
 | --- | --- |
 | `google_ads_upload_video` | Upload MP4/WebM/QuickTime bytes (max 16 MiB) to the Google-managed YouTube channel for the selected ad account. |
 | `google_ads_remove_video_upload` | Remove a video upload owned by the selected ad account. |
-| `google_ads_apply_plan` | Preview, validate and atomically apply a Google Ads v25 build/change plan: campaigns, budgets, ad groups, RSA/Display/Demand Gen ads, image/text/YouTube assets, PMax asset groups and links, keywords, geographic/language targeting listing groups and conversion action configuration (no conversion event uploads). |
+| `google_ads_apply_plan` | Preview, validate and atomically apply a Google Ads v26 build/change plan: campaigns, budgets, ad groups, RSA/Display/Demand Gen ads, image/text/YouTube assets, PMax asset groups and links, keywords, geographic/language targeting listing groups and conversion action configuration (no conversion event uploads). |
 | `google_ads_update_campaign_status` | Pause, re-enable or remove a Google Ads campaign. |
 | `google_ads_create_campaign` | Create a Google Ads campaign. |
 | `google_ads_update_campaign_budget` | Change the daily budget of a Google Ads campaign. |
 | `google_ads_rename_campaign` | Rename a Google Ads campaign. |
+| `google_ads_rename_adgroup` | Rename a Google Ads ad group. |
+| `google_ads_rename_asset_group` | Rename a Google Ads Performance Max asset group. |
+| `google_ads_rename_account` | Rename a Google Ads account (its descriptive name). |
 | `google_ads_update_campaign_schedule` | Change the start or end date of a Google Ads campaign. |
 | `google_ads_update_adgroup_status` | Pause, re-enable or remove a Google Ads ad group. |
 | `google_ads_update_adgroup_bid` | Change the default CPC bid of a Google Ads ad group. |
@@ -320,8 +334,8 @@ Disabled by default. Calls preview unless explicitly confirmed. Check the config
 | URI | Contents |
 |---|---|
 | `google-ads://manifest` | What this server exposes, and which tool to run first |
-| `google-ads://metrics` | All 130 metrics with categories and formats |
-| `google-ads://dimensions` | All 84 dimensions and where they are valid |
+| `google-ads://metrics` | All 145 metrics with categories and formats |
+| `google-ads://dimensions` | All 88 dimensions and where they are valid |
 | `google-ads://compatibility` | The compatibility matrix |
 | `google-ads://recipes` | 11 step-by-step workflows |
 
@@ -336,7 +350,12 @@ Concretely:
 
 - **None of the four credentials is ever logged**, at any log level, or written to disk.
 - **The access token is cached in memory** until a minute before expiry, rather than
-  re-requested on every call.
+  re-requested on every call. Reads and writes share it.
+- **A revoked refresh token is reported once.** When Google answers `invalid_grant`, every
+  later call returns the same message with the steps to authorize again, and the server stops
+  asking Google for a token until it restarts.
+- **Accounts can be limited.** With `GOOGLE_ADS_ACCOUNT_IDS` set, a call naming another customer
+  is refused before any request, and account discovery lists only the allowed customers.
 - **Two hosts are contacted, and only two**: `googleads.googleapis.com` and
   `oauth2.googleapis.com`. *A test fails the build if a third host appears in the source.*
 - **No fetch follows a redirect.** Every outbound call sets `redirect: "error"`, so a redirect

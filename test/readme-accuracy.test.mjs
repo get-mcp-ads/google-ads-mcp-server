@@ -12,7 +12,7 @@ async function introspect() {
   const transport = new StdioClientTransport({
     command: "node",
     args: ["dist/cli.js"],
-    env: { ...process.env, GOOGLE_ADS_DEVELOPER_TOKEN: "t", GOOGLE_ADS_CLIENT_ID: "i", GOOGLE_ADS_CLIENT_SECRET: "s", GOOGLE_ADS_REFRESH_TOKEN: "r", GOOGLE_ADS_ENABLE_WRITES: "1" },
+    env: { ...process.env, GOOGLE_ADS_DEVELOPER_TOKEN: "t", GOOGLE_ADS_CLIENT_ID: "i", GOOGLE_ADS_CLIENT_SECRET: "s", GOOGLE_ADS_REFRESH_TOKEN: "r", GOOGLE_ADS_ENABLE_WRITES: "true" },
   });
   const client = new Client({ name: "readme-check", version: "1" }, { capabilities: {} });
   await client.connect(transport);
@@ -57,7 +57,7 @@ test("README tool counts match reality", async () => {
   const reads = tools.filter((t) => !writes.includes(t));
 
   assert.equal(reads.length, 35, "read tool count changed, update the README");
-  assert.equal(writes.length, 10, "write tool count changed, update the README");
+  assert.equal(writes.length, 13, "write tool count changed, update the README");
   assert.equal(resources.length, 5, "resource count changed, update the README");
 
   assert.match(README, new RegExp(`\\*\\*${reads.length} read tools\\*\\*`));

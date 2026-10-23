@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 // ============================================
-// GOOGLE ADS API v25 TYPES FOR MCP SERVER
+// GOOGLE ADS API v26 TYPES FOR MCP SERVER
 // Complete TypeScript interfaces for Google Ads integration
 // Type definitions for the Google Ads API surface used by this server
 // ============================================
@@ -78,7 +78,9 @@ export type GoogleAdsResourceType =
   | "change_status"
   | "label"
   | "paid_organic_search_term_view"
-  | "experiment";
+  | "experiment"
+  // Measurement (API v26 Search Lift)
+  | "lift_measurement_config";
 
 /**
  * Metric categories for organization
@@ -95,6 +97,7 @@ export type GoogleAdsMetricCategory =
   | "quality"
   | "cross_device"
   | "invalid_traffic"
+  | "search_lift"
   | "calculated";
 
 /**
@@ -1028,7 +1031,7 @@ export class GoogleAdsApiException extends Error {
 // CONSTANTS
 // ============================================
 
-export const GOOGLE_ADS_API_VERSION = "v25";
+export const GOOGLE_ADS_API_VERSION = "v26";
 export const GOOGLE_ADS_API_BASE_URL = `https://googleads.googleapis.com/${GOOGLE_ADS_API_VERSION}`;
 
 export const MICRO_CURRENCY_FACTOR = 1_000_000;
@@ -1048,6 +1051,7 @@ export const MICRO_CURRENCY_FIELDS = [
   "metrics.trueview_average_cpv",
   "metrics.active_view_cpm",
   "metrics.active_view_measurable_cost_micros",
+  "metrics.search_lift_cost_micros",
   "campaign_budget.amount_micros",
   "campaign_budget.total_amount_micros",
 ] as const;

@@ -111,7 +111,7 @@ describe("Google write regression", () => {
     ).rejects.toThrow("merchantId");
     expect(r).toHaveLength(0);
   });
-  it("uses v25 calendar fields and can clear end dates", async () => {
+  it("uses v26 calendar fields and can clear end dates", async () => {
     const r = requests();
     const t = tool("google_ads_update_campaign_schedule");
     await t.handler({

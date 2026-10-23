@@ -15,6 +15,8 @@ import { GOOGLE_ADS_API_VERSION, stripCustomerId, type GoogleAdsRow } from "./ty
 import { registerGoogleAdsKeywordPlannerTools } from "./keyword-planner.js";
 import { registerGoogleAdsDiscoveryTools } from "./discovery-tools.js";
 import { registerGoogleAdsReadOnlyRpcTool } from "./read-rpc.js";
+import { tokenSourceFor } from "../../core/google-oauth.js";
+import { AccountNotAllowedError, accountIsAllowed } from "../../core/account-scope.js";
 
 const customerIdSchema = z.string().describe("Google Ads customer ID (without dashes, e.g., 1234567890)");
 const loginCustomerIdSchema = z.string().optional().describe("MCC Manager account ID (required for sub-accounts managed by an MCC)");
@@ -309,7 +311,10 @@ export function registerGoogleAdsTools(server: McpServer, config: GoogleAdsConfi
     clientSecret: config.clientSecret,
     refreshToken: config.refreshToken,
     loginCustomerId: config.loginCustomerId,
+    allowedAccountIds: config.allowedAccountIds,
+    tokenSource: tokenSourceFor(config, "GOOGLE_ADS_REFRESH_TOKEN"),
   });
+  const allowedAccountIds = config.allowedAccountIds;
 
   // ── 1. google_ads_list_accounts ────────────────────────────────────
   server.tool(
@@ -577,6 +582,10 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
         if (accessibleCustomers.length === 0) {
           warnings.push("No accessible customers were returned. Verify the OAuth user has Google Ads access and the developer token is approved.");
         }
+        const unreadAllowedIds = (allowedAccountIds ?? []).filter(id => !customerIds.has(id));
+        if (unreadAllowedIds.length > 0) {
+          warnings.push(`These GOOGLE_ADS_ACCOUNT_IDS entries could not be read with the current credentials: ${unreadAllowedIds.join(", ")}.`);
+        }
         if (loginCustomerId && !customerIds.has(loginCustomerId)) {
           warnings.push("GOOGLE_ADS_LOGIN_CUSTOMER_ID is configured but was not returned by listAccessibleCustomers; verify MCC access if child account queries fail.");
         }
@@ -597,6 +606,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
           apiVersion: GOOGLE_ADS_API_VERSION,
           credentialsPresent: credentialPresence,
           loginCustomerId,
+          accountAllowlist: allowedAccountIds ? { configured: true, count: allowedAccountIds.length } : { configured: false },
           accessibleCustomers,
           accessibleCustomerCount: accessibleCustomers.length,
           warnings,
@@ -608,6 +618,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
           apiVersion: GOOGLE_ADS_API_VERSION,
           credentialsPresent: credentialPresence,
           loginCustomerId: config.loginCustomerId ? stripCustomerId(config.loginCustomerId) : null,
+          accountAllowlist: allowedAccountIds ? { configured: true, count: allowedAccountIds.length } : { configured: false },
           accessibleCustomers: [],
           accessibleCustomerCount: 0,
           error: getErrorMessage(error),
@@ -628,6 +639,14 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     async ({ managerCustomerId, includeInactive }) => {
       try {
         const warnings: string[] = [];
+        const configuredManager = config.loginCustomerId ? stripCustomerId(config.loginCustomerId) : undefined;
+        // With an allowlist, a manager is read only when it is allowed itself or
+        // is the configured GOOGLE_ADS_LOGIN_CUSTOMER_ID, and only its allowed
+        // clients are returned.
+        if (managerCustomerId && stripCustomerId(managerCustomerId) !== configuredManager &&
+            !accountIsAllowed(allowedAccountIds, managerCustomerId)) {
+          throw new AccountNotAllowedError(managerCustomerId);
+        }
         const accessibleCustomers = await client.getAllCustomers();
         const managerIds = managerCustomerId
           ? [stripCustomerId(managerCustomerId)]
@@ -664,11 +683,13 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
           `);
 
           try {
-            const rows = await client.searchStream(managerId, gaql);
+            const managerAllowed = accountIsAllowed(allowedAccountIds, managerId);
+            const rows = await client.searchStream(managerId, gaql, managerAllowed ? "account" : "manager-discovery");
             for (const row of rows) {
               const customerClient = row.customerClient as Record<string, unknown> | undefined;
               if (!customerClient) continue;
               const customerId = String(customerClient.id ?? "");
+              if (!accountIsAllowed(allowedAccountIds, customerId)) continue;
               relations.push({
                 managerCustomerId: managerId,
                 clientCustomerId: customerId,

@@ -1,0 +1,120 @@
+# Publishes one version from its tag, in the order the MCP Registry requires:
+# npm first (the registry reads mcpName from the published package), then the
+# GitHub release, then the registry entry. Every step skips cleanly when its
+# target already holds this version, so rerunning a partial release is safe.
+#
+# npm uses trusted publishing (OIDC): no npm token is stored in this repository.
+# The package needs a trusted publisher on npmjs.com that points at this
+# repository and this workflow file, release.yml.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing version tag to publish, such as v2.1.0"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      # Trusted publishing needs npm 11.5.1 or newer.
+      - run: npm install --global npm@11
+
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+
+      - name: Check the tag matches the package
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Use a stable version tag such as v2.1.0."
+            exit 1
+          fi
+          git show-ref --verify "refs/tags/$RELEASE_TAG"
+          PKG=$(node -p "require('./package.json').version")
+          if [ "${RELEASE_TAG#v}" != "$PKG" ]; then
+            echo "Tag $RELEASE_TAG, package.json $PKG. The test suite already checks server.json and src/server.ts."
+            exit 1
+          fi
+          echo "VERSION=$PKG" >> "$GITHUB_ENV"
+          echo "PACKAGE=$(node -p "require('./package.json').name")" >> "$GITHUB_ENV"
+
+      - name: Publish to npm
+        run: |
+          if npm view "$PACKAGE@$VERSION" version >/dev/null 2>&1; then
+            echo "$PACKAGE@$VERSION is already on npm."
+          elif ! npm publish --access public --provenance; then
+            echo "npm refused the publish. Check that $PACKAGE has a trusted publisher on npmjs.com"
+            echo "for this repository and the workflow file release.yml."
+            exit 1
+          fi
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists."
+            exit 0
+          fi
+          awk -v v="$VERSION" '
+            $0 ~ "^## " v "( |$)" { found = 1; next }
+            /^## / && found { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "CHANGELOG.md has no section for $VERSION."
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" --verify-tag --latest \
+            --title "$RELEASE_TAG" --notes-file release-notes.md
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Publish to the MCP Registry
+        env:
+          MCP_DNS_PRIVATE_KEY: ${{ secrets.MCP_DNS_PRIVATE_KEY }}
+        run: |
+          NAME=$(node -p "require('./server.json').name")
+          LISTED=$(curl -sf "https://registry.modelcontextprotocol.io/v0.1/servers?search=$NAME" \
+            | node -e "
+              let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{
+                const servers=(JSON.parse(s).servers||[]);
+                const hit=servers.some(x=>(x.server||x).name===process.argv[1]&&(x.server||x).version===process.argv[2]);
+                console.log(hit?'yes':'no');
+              })" "$NAME" "$VERSION" || echo "no")
+          if [ "$LISTED" = "yes" ]; then
+            echo "$NAME $VERSION is already in the registry."
+            exit 0
+          fi
+          ./mcp-publisher login dns --domain getmcpads.com --private-key "$MCP_DNS_PRIVATE_KEY"
+          ./mcp-publisher publish

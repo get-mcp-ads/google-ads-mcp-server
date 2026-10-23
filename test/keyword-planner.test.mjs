@@ -297,7 +297,7 @@ test("REST client calls the pinned-version planless historical endpoint with nor
     assert.equal(calls.length, 2);
     assert.equal(
       calls[1].url,
-      "https://googleads.googleapis.com/v25/customers/1234567890:generateKeywordHistoricalMetrics"
+      "https://googleads.googleapis.com/v26/customers/1234567890:generateKeywordHistoricalMetrics"
     );
     assert.equal(calls[1].init.headers["developer-token"], "developer-token");
     assert.equal(calls[1].init.headers["login-customer-id"], "9998887777");
@@ -354,8 +354,8 @@ test("REST client uses the pinned-version planless ideas and forecast endpoints 
 
     const planningCalls = calls.filter((call) => call.url !== "https://oauth2.googleapis.com/token");
     assert.deepEqual(planningCalls.map((call) => call.url), [
-      "https://googleads.googleapis.com/v25/customers/1234567890:generateKeywordIdeas",
-      "https://googleads.googleapis.com/v25/customers/1234567890:generateKeywordForecastMetrics",
+      "https://googleads.googleapis.com/v26/customers/1234567890:generateKeywordIdeas",
+      "https://googleads.googleapis.com/v26/customers/1234567890:generateKeywordForecastMetrics",
     ]);
     assert.deepEqual(JSON.parse(planningCalls[0].init.body), {
       keywordSeed: { keywords: ["galerie"] },
@@ -538,7 +538,7 @@ test("historical Keyword Planner handler returns the stable MCP contract end to 
     assert.equal(payload.results[0].metrics.trends.threeMonthChangePercent, 10);
     assert.equal(payload.results[0].metrics.trends.yearOverYearChangePercent, -8.33);
     assert.equal(payload.debug.source, "google_ads");
-    assert.equal(payload.debug.apiVersion, "v25");
+    assert.equal(payload.debug.apiVersion, "v26");
     assert.equal(payload.debug.requestCount, 1);
     assert.deepEqual(payload.warnings, []);
   } finally {

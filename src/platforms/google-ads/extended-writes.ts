@@ -2,6 +2,10 @@ import { webcrypto } from "node:crypto";
 /** Copyright 2026 GetMCPAds. SPDX-License-Identifier: Apache-2.0 */
 import { z } from "zod";
 import type { ToolShape } from "../../tool-quality.js";
+import { tokenSourceFor } from "../../core/google-oauth.js";
+import { assertUrlAccountAllowed } from "../../core/account-scope.js";
+import { MAX_API_RESPONSE_BYTES, MAX_SMALL_RESPONSE_BYTES, readBoundedJson } from "../../core/http.js";
+import { GOOGLE_ADS_API_BASE_URL, GOOGLE_ADS_API_VERSION } from "./types.js";
 
 type Row = Record<string, any>;
 type Collector = {
@@ -17,7 +21,23 @@ export const GOOGLE_EXTENDED_WRITES = new Set([
   "google_ads_upload_video",
   "google_ads_remove_video_upload",
 ]);
-const BASE = "https://googleads.googleapis.com/v25";
+const BASE = GOOGLE_ADS_API_BASE_URL;
+/** Uploads carry up to 16 MiB; the other writes answer far sooner. */
+const WRITE_TIMEOUT_MS = 60_000;
+const UPLOAD_TIMEOUT_MS = 300_000;
+
+/** fetch with a deadline. A write that times out is reported as uncertain and never retried. */
+async function timedFetch(url: string, init: RequestInit, timeoutMs: number, label: string): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, redirect: "error", signal: AbortSignal.timeout(timeoutMs) });
+  } catch (error) {
+    if (error instanceof Error && error.name === "TimeoutError")
+      throw new Error(
+        `${label}: Google Ads did not answer within ${timeoutMs / 1000} seconds. The change may have been applied. Read the account before trying again.`,
+      );
+    throw error;
+  }
+}
 const resources = {
   conversionActionOperation: "conversionActions",
   campaignBudgetOperation: "campaignBudgets",
@@ -250,7 +270,7 @@ export function registerGoogleExtendedWrites(
   registerGoogleVideoWrites(c, config);
   c.tool(
     "google_ads_apply_plan",
-    "Preview, validate and atomically apply a Google Ads v25 build/change plan: campaigns, budgets, ad groups, RSA/Display/Demand Gen ads, image/text/YouTube assets, PMax asset groups and links, keywords, geographic/language targeting listing groups and conversion action configuration (no conversion event uploads). Native REST camelCase fields; amounts are integer micros of the explicitly stated currency. Supports temporary negative resource IDs for ordered creation in one transaction. No VIDEO campaign creation (Google API restriction), billing, account access changes, customer lists or conversion uploads. New campaigns/groups/ads are always PAUSED. Call first without confirm to inspect the plan and get planHash; validateOnly asks Google without applying; execution requires confirm and the matching expectedPlanHash. Read back results with google_ads_run_gaql. Never retry a creation after an uncertain network result before checking its name/IDs.",
+    "Preview, validate and atomically apply a Google Ads v26 build/change plan: campaigns, budgets, ad groups, RSA/Display/Demand Gen ads, image/text/YouTube assets, PMax asset groups and links, keywords, geographic/language targeting listing groups and conversion action configuration (no conversion event uploads). Native REST camelCase fields; amounts are integer micros of the explicitly stated currency. Supports temporary negative resource IDs for ordered creation in one transaction. No VIDEO campaign creation (Google API restriction), billing, account access changes, customer lists or conversion uploads. New campaigns/groups/ads are always PAUSED. Call first without confirm to inspect the plan and get planHash; validateOnly asks Google without applying; execution requires confirm and the matching expectedPlanHash. Read back results with google_ads_run_gaql. Never retry a creation after an uncertain network result before checking its name/IDs.",
     {
       customerId: z.string().regex(/^[\d-]+$/),
       currency: z
@@ -347,34 +367,28 @@ async function googleSession(
   testAccountOnly: boolean,
   manager?: string,
 ) {
-  const auth = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      refresh_token: config.refreshToken,
-    }),
-  redirect: "error"});
-  const token: any = await auth.json();
-  if (!auth.ok || !token.access_token)
-    throw new Error(
-      "Google authorization could not be refreshed. Reconnect the Google Ads source.",
-    );
+  assertUrlAccountAllowed(
+    (config as unknown as { allowedAccountIds?: readonly string[] }).allowedAccountIds,
+    `${BASE}/customers/${cid}`,
+  );
+  // Shared with every other tool. A revoked refresh token fails here with a
+  // re-authorization message, before any write is attempted.
+  const accessToken = await tokenSourceFor(config as never, "GOOGLE_ADS_REFRESH_TOKEN").getAccessToken();
   const headers: Record<string, string> = {
-    authorization: `Bearer ${token.access_token}`,
+    authorization: `Bearer ${accessToken}`,
     "developer-token": config.developerToken,
     "content-type": "application/json",
   };
   if (manager) headers["login-customer-id"] = manager;
   async function api(path: string, body: unknown) {
-    const r = await fetch(`${BASE}/customers/${cid}/${path}`, {
+    const r = await timedFetch(`${BASE}/customers/${cid}/${path}`, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
-    redirect: "error"});
-    const x: any = await r.json();
+      redirect: "error",
+    }, WRITE_TIMEOUT_MS, "Google Ads");
+    const parsed = await readBoundedJson<Record<string, unknown>>(r, r.ok ? MAX_API_RESPONSE_BYTES : MAX_SMALL_RESPONSE_BYTES, "Google Ads");
+    const x: any = typeof parsed === "string" ? { error: { message: parsed.slice(0, 300) } } : parsed;
     if (!r.ok) {
       const errors = x.error?.details
         ?.flatMap((d: any) => d.errors ?? [])
@@ -498,8 +512,8 @@ function registerGoogleVideoWrites(
         a.testAccountOnly,
         manager,
       );
-      const start = await fetch(
-        `https://googleads.googleapis.com/resumable/upload/v25/customers/${cid}/youTubeVideoUploads:create`,
+      const start = await timedFetch(
+        `https://googleads.googleapis.com/resumable/upload/${GOOGLE_ADS_API_VERSION}/customers/${cid}/youTubeVideoUploads:create`,
         {
           method: "POST",
           headers: {
@@ -516,8 +530,12 @@ function registerGoogleVideoWrites(
               video_privacy: "UNLISTED",
             },
           }),
-        redirect: "error"},
+          redirect: "error",
+        },
+        WRITE_TIMEOUT_MS,
+        "Google video upload initiation",
       );
+      await start.body?.cancel().catch(() => undefined);
       if (!start.ok)
         throw new Error(
           `Google video upload initiation failed (${start.status}). No automatic retry.`,
@@ -530,7 +548,7 @@ function registerGoogleVideoWrites(
         throw new Error(
           "Unexpected Google upload URL; no bytes or credentials sent.",
         );
-      const uploaded = await fetch(target, {
+      const uploaded = await timedFetch(target, {
         method: "PUT",
         headers: {
           ...headers,
@@ -539,14 +557,15 @@ function registerGoogleVideoWrites(
           "X-Goog-Upload-Command": "upload, finalize",
         },
         body: Uint8Array.from(binary, (c) => c.charCodeAt(0)),
-      redirect: "error"});
+        redirect: "error",
+      }, UPLOAD_TIMEOUT_MS, "Google video upload");
       if (!uploaded.ok) {
-        const error: any = await uploaded.json().catch(() => ({}));
+        const error: any = await readBoundedJson(uploaded, MAX_SMALL_RESPONSE_BYTES, "Google video upload").catch(() => ({}));
         throw new Error(
           `Google video upload failed (${uploaded.status}): ${String(error.error?.message ?? "unknown error").slice(0, 700)}. Inspect you_tube_video_upload before retrying.`,
         );
       }
-      const response: any = await uploaded.json();
+      const response: any = await readBoundedJson(uploaded, MAX_SMALL_RESPONSE_BYTES, "Google video upload");
       if (
         !String(response.resourceName).startsWith(
           `customers/${cid}/youTubeVideoUploads/`,
@@ -568,7 +587,7 @@ function registerGoogleVideoWrites(
   );
   c.tool(
     "google_ads_remove_video_upload",
-    "Remove a video upload owned by the selected ad account. Deletes the uploaded YouTube video and can break ads referencing it. Preview and matching expectedPlanHash required. Google v25 marks title/description immutable; this tool does not pretend to edit them.",
+    "Remove a video upload owned by the selected ad account. Deletes the uploaded YouTube video and can break ads referencing it. Preview and matching expectedPlanHash required. Google v26 marks title/description immutable; this tool does not pretend to edit them.",
     { ...common, uploadId: z.string().regex(/^\d+$/) },
     async (a) => {
       const cid = a.customerId.replace(/-/g, "");
