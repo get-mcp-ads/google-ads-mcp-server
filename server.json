@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.getmcpads/google-ads",
   "title": "Google Ads",
-  "description": "Google Ads MCP server: 35 read tools, 10 opt-in preview-first writes.",
-  "version": "2.0.1",
+  "description": "Google Ads MCP server: 35 read tools, 13 opt-in preview-first writes.",
+  "version": "2.1.0",
   "websiteUrl": "https://www.getmcpads.com/tools/google-ads",
   "repository": {
     "url": "https://github.com/get-mcp-ads/google-ads-mcp-server",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@getmcpads/google-ads-mcp-server",
-      "version": "2.0.1",
+      "version": "2.1.0",
       "transport": {
         "type": "stdio"
       },
@@ -50,8 +50,14 @@
           "isSecret": false
         },
         {
+          "name": "GOOGLE_ADS_ACCOUNT_IDS",
+          "description": "Comma-separated customer IDs every tool is limited to. Optional in 2.x, required in 3.0.0.",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
           "name": "GOOGLE_ADS_ENABLE_WRITES",
-          "description": "Set to 1 to expose 10 write tools. Default calls preview; confirm:true applies changes.",
+          "description": "Set to true to expose 13 write tools. Calls preview by default; confirm:true applies changes.",
           "isRequired": false,
           "isSecret": false
         }

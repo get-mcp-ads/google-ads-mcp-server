@@ -32,6 +32,23 @@ export const RESOURCE_RESTRICTED_METRICS: Record<string, GoogleAdsResourceType[]
   "metrics.video_quartile_p100_rate": ["campaign", "ad_group", "ad_group_ad", "video"],
   "metrics.video_trueview_views": ["campaign", "ad_group", "ad_group_ad", "video"],
   "metrics.video_trueview_view_rate": ["campaign", "ad_group", "ad_group_ad", "video"],
+
+  // Search Lift metrics (API v26): selectable only FROM lift_measurement_config
+  "metrics.relative_search_lift": ["lift_measurement_config"],
+  "metrics.relative_search_lift_p90_lower_bound": ["lift_measurement_config"],
+  "metrics.relative_search_lift_p90_upper_bound": ["lift_measurement_config"],
+  "metrics.incremental_searches_p_value": ["lift_measurement_config"],
+  "metrics.search_lift_cost_micros": ["lift_measurement_config"],
+  "metrics.search_lift_impressions": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches_p90_lower_bound": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches_p90_upper_bound": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches_per_cost": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches_per_cost_p90_lower_bound": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches_per_cost_p90_upper_bound": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches_per_impression": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches_per_impression_p90_lower_bound": ["lift_measurement_config"],
+  "metrics.normalized_incremental_searches_per_impression_p90_upper_bound": ["lift_measurement_config"],
 };
 
 /**
@@ -68,7 +85,16 @@ export const INCOMPATIBLE_SEGMENT_PAIRS: Array<[string, string]> = [
   ["segments.click_type", "segments.conversion_action_category"],
   // date-dependent segments
   // No explicit incompatibilities beyond hour requiring date
+  // Search Lift (API v26): search_property is not selectable with demographic or device segments
+  ["segments.search_property", "segments.age_range"],
+  ["segments.search_property", "segments.device"],
+  ["segments.search_property", "segments.gender"],
 ];
+
+/**
+ * Search Lift segments (API v26), selectable only FROM lift_measurement_config
+ */
+const SEARCH_LIFT_SEGMENTS = ["segments.search_lift_keyword_bundle", "segments.search_property"];
 
 /**
  * Segments that require another segment to be present
@@ -237,6 +263,14 @@ export function validateQuerySelection(
   if (selectedShoppingSegments.length > 0 && !SHOPPING_SEGMENT_ALLOWED_RESOURCES.includes(resource)) {
     errors.push(
       `Shopping segments (${selectedShoppingSegments.join(", ")}) are only available on: ${SHOPPING_SEGMENT_ALLOWED_RESOURCES.join(", ")}. Current resource: "${resource}"`
+    );
+  }
+
+  // 6b. Search Lift segments exist only on lift_measurement_config
+  const selectedLiftSegments = segmentApiFields.filter((s) => SEARCH_LIFT_SEGMENTS.includes(s));
+  if (selectedLiftSegments.length > 0 && resource !== "lift_measurement_config") {
+    errors.push(
+      `Search Lift segments (${selectedLiftSegments.join(", ")}) are only available on: lift_measurement_config. Current resource: "${resource}"`
     );
   }
 

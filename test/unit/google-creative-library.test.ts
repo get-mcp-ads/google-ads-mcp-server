@@ -5,7 +5,7 @@ import { collect } from "./catalogue";
 
 /**
  * Handlers de la bibliothèque créative Google Ads, exercés avec fetch mocké
- * sur des exemples synthétiques compatibles avec Google Ads v25 : images simgad stables, vidéos = assets YouTube (aucun fichier,
+ * sur des exemples synthétiques compatibles avec Google Ads v26 : images simgad stables, vidéos = assets YouTube (aucun fichier,
  * embed + vignettes publiques), ads Demand Gen référençant leurs assets.
  * Particularité du client : un premier fetch d'échange OAuth précède chaque
  * session, et searchStream renvoie un TABLEAU de batches [{results: [...]}].
@@ -45,7 +45,7 @@ function stubGoogleFetch(streamBatches: unknown[][]) {
       return jsonResponse({ access_token: "at-123", expires_in: 3600 });
     }
     if (url.endsWith("customers:listAccessibleCustomers")) return jsonResponse({resourceNames:["customers/1234567890"]});
-    expect(url).toContain("googleads.googleapis.com/v25/customers/1234567890/googleAds:searchStream");
+    expect(url).toContain("googleads.googleapis.com/v26/customers/1234567890/googleAds:searchStream");
     gaqlQueries.push(String(JSON.parse(init?.body ?? "{}").query ?? ""));
     const batch = streamBatches[Math.min(streamCall, streamBatches.length - 1)];
     streamCall += 1;

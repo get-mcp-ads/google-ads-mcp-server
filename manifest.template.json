@@ -2,8 +2,8 @@
   "manifest_version": "0.3",
   "name": "google-ads-mcp-server",
   "display_name": "Google Ads by getmcpads",
-  "version": "2.0.0",
-  "description": "Google Ads MCP server: 35 read tools, 10 opt-in preview-first writes.",
+  "version": "2.1.0",
+  "description": "Google Ads MCP server: 35 read tools, 13 opt-in preview-first writes.",
   "author": {
     "name": "getmcpads",
     "url": "https://www.getmcpads.com"
@@ -31,6 +31,7 @@
         "GOOGLE_ADS_CLIENT_SECRET": "${user_config.google_ads_client_secret}",
         "GOOGLE_ADS_REFRESH_TOKEN": "${user_config.google_ads_refresh_token}",
         "GOOGLE_ADS_LOGIN_CUSTOMER_ID": "${user_config.google_ads_login_customer_id}",
+        "GOOGLE_ADS_ACCOUNT_IDS": "${user_config.google_ads_account_ids}",
         "GOOGLE_ADS_ENABLE_WRITES": "${user_config.google_ads_enable_writes}"
       }
     }
@@ -72,13 +73,21 @@
       "sensitive": false,
       "default": ""
     },
+    "google_ads_account_ids": {
+      "type": "string",
+      "title": "Google Ads Account Ids",
+      "description": "Comma-separated customer IDs every tool is limited to. Recommended; required in 3.0.0.",
+      "required": false,
+      "sensitive": false,
+      "default": ""
+    },
     "google_ads_enable_writes": {
       "type": "string",
       "title": "Google Ads Enable Writes",
-      "description": "Set to 1 to expose 10 write tools. Default calls preview; confirm:true applies changes.",
+      "description": "Set to true to expose 13 write tools. Calls preview by default; confirm:true applies changes.",
       "required": false,
       "sensitive": false,
-      "default": "0"
+      "default": "false"
     }
   },
   "tools_generated": true,
@@ -89,7 +98,7 @@
       "linux"
     ],
     "runtimes": {
-      "node": ">=22.12"
+      "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
     }
   }
 }

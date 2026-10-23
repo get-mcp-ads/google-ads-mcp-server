@@ -36,16 +36,6 @@ import {
   SuggestGeoTargetConstantsResponse,
 } from "./types.js";
 
-/**
- * OAuth2 token refresh response shape
- */
-interface GoogleAdsRefreshTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
-  scope: string;
-}
-
 export { GoogleAdsApiException } from "./types.js";
 import { planQuery } from "./query-planner.js";
 import { calculateMetrics } from "./calculated-metrics.js";
@@ -53,6 +43,9 @@ import { logger } from "../../core/logger.js";
 import { KeywordPlannerRateLimiter, RateLimiter } from "../../core/rate-limiter.js";
 import { isGoogleAdsReadOnlyServicePath } from "./read-rpc.js";
 import { NO_REDIRECT, refuseRedirect } from "../../core/redirects.js";
+import { GoogleTokenSource } from "../../core/google-oauth.js";
+import { MAX_API_RESPONSE_BYTES, MAX_SMALL_RESPONSE_BYTES, readBoundedJson } from "../../core/http.js";
+import { accountIsAllowed, assertUrlAccountAllowed } from "../../core/account-scope.js";
 
 const DEFAULT_GOOGLE_ADS_REQUEST_TIMEOUT_MS = 30_000;
 
@@ -98,7 +91,14 @@ export interface GoogleAdsClientConfig {
   clientSecret: string;
   refreshToken: string;
   loginCustomerId?: string;
+  /** Customer IDs every request is limited to. Undefined: no allowlist. */
+  allowedAccountIds?: readonly string[];
+  /** Shared with the write tools, so one process refreshes one token. */
+  tokenSource?: GoogleTokenSource;
 }
+
+/** Internal discovery reads a manager only to find which manager holds an allowed account. */
+export type RequestScope = "account" | "manager-discovery";
 
 // ============================================
 // GOOGLE ADS CLIENT CLASS
@@ -106,12 +106,9 @@ export interface GoogleAdsClientConfig {
 
 export class GoogleAdsClient {
   private developerToken: string;
-  private clientId: string;
-  private clientSecret: string;
-  private refreshToken: string;
   private loginCustomerId?: string;
-  private accessToken: string = "";
-  private tokenExpiresAt: number = 0;
+  private readonly allowedAccountIds?: readonly string[];
+  private readonly tokenSource: GoogleTokenSource;
   /**
    * Le gestionnaire résolu pour un compte, ou `undefined` s'il n'en a pas.
    *
@@ -125,72 +122,23 @@ export class GoogleAdsClient {
 
   constructor(config: GoogleAdsClientConfig) {
     this.developerToken = config.developerToken;
-    this.clientId = config.clientId;
-    this.clientSecret = config.clientSecret;
-    this.refreshToken = config.refreshToken;
+    this.allowedAccountIds = config.allowedAccountIds;
+    this.tokenSource = config.tokenSource ?? new GoogleTokenSource(
+      { clientId: config.clientId, clientSecret: config.clientSecret, refreshToken: config.refreshToken },
+      "GOOGLE_ADS_REFRESH_TOKEN",
+    );
     this.loginCustomerId = config.loginCustomerId
       ? stripCustomerId(config.loginCustomerId)
       : undefined;
   }
 
   // ============================================
-  // TOKEN MANAGEMENT (PRIVATE)
-  // ============================================
-
-  /**
-   * Refresh access token using refresh token.
-   * Google Ads refresh tokens never expire.
-   */
-  private async refreshAccessToken(): Promise<GoogleAdsRefreshTokenResponse> {
-    const response = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      redirect: "error",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: this.refreshToken,
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-      }),
-    });
-
-    if (!response.ok) {
-      const errBody = await response.json().catch(() => ({})) as Record<string, string>;
-      throw new GoogleAdsApiException(
-        errBody.error_description || errBody.error || "Failed to refresh token",
-        response.status,
-        errBody.error
-      );
-    }
-
-    return response.json() as Promise<GoogleAdsRefreshTokenResponse>;
-  }
-
-  /**
-   * Ensure we have a valid (non-expired) access token.
-   * Called automatically before every API request.
-   */
-  private async ensureValidToken(): Promise<void> {
-    // Refresh if token is missing or will expire within 60 seconds
-    if (!this.accessToken || Date.now() >= this.tokenExpiresAt - 60_000) {
-      logger.info("google-ads", "Refreshing access token");
-      const tokenResponse = await this.refreshAccessToken();
-      this.accessToken = tokenResponse.access_token;
-      // Google tokens typically expire in 3600s; use expires_in if available
-      this.tokenExpiresAt = Date.now() + (tokenResponse.expires_in ?? 3600) * 1000;
-      logger.info("google-ads", "Access token refreshed successfully");
-    }
-  }
-
-  // ============================================
   // PRIVATE METHODS
   // ============================================
 
-  private getHeaders(loginCustomerId?: string): Record<string, string> {
+  private getHeaders(accessToken: string, loginCustomerId?: string): Record<string, string> {
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${this.accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
       "developer-token": this.developerToken,
       "Content-Type": "application/json",
     };
@@ -241,7 +189,7 @@ export class GoogleAdsClient {
       }
 
       for (const candidate of accessible) {
-        const children = await this.getClientAccounts(candidate);
+        const children = await this.getClientAccounts(candidate, "manager-discovery");
         for (const child of children) {
           if (stripCustomerId(child.id) === wanted) {
             this.managerCache.set(wanted, candidate);
@@ -267,9 +215,12 @@ export class GoogleAdsClient {
     options: RequestInit = {},
     beforeAttempt?: () => Promise<void>,
     deadlineAtMs?: number,
-    loginCustomerId?: string
+    loginCustomerId?: string,
+    scope: RequestScope = "account"
   ): Promise<T> {
-    await this.ensureValidToken();
+    // Checked before a token is even requested: a refused account costs nothing.
+    if (scope === "account") assertUrlAccountAllowed(this.allowedAccountIds, url);
+    const accessToken = await this.tokenSource.getAccessToken();
 
     return this.rateLimiter.execute<T>(async () => {
       // Some Google Ads services (notably Keyword Planner) impose a stricter
@@ -303,7 +254,7 @@ export class GoogleAdsClient {
           // whatever host the redirect names.
           redirect: "error",
           headers: {
-            ...this.getHeaders(loginCustomerId),
+            ...this.getHeaders(accessToken, loginCustomerId),
             ...options.headers,
           },
         });
@@ -311,7 +262,7 @@ export class GoogleAdsClient {
 
         if (!response.ok) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const errorBody = await response.json().catch(() => ({})) as any;
+          const errorBody = await readBoundedJson(response, MAX_SMALL_RESPONSE_BYTES, "Google Ads API error").catch(() => ({})) as any;
           const errorDetails = errorBody?.error;
 
           // Let tool handlers decide whether an API failure is fatal. Some discovery
@@ -335,7 +286,11 @@ export class GoogleAdsClient {
           );
         }
 
-        return response.json() as Promise<T>;
+        const payload = await readBoundedJson<T>(response, MAX_API_RESPONSE_BYTES, "Google Ads API");
+        if (typeof payload === "string") {
+          throw new GoogleAdsApiException("Google Ads API returned a reply that is not JSON.", 502, "INVALID_RESPONSE");
+        }
+        return payload;
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           throw new GoogleAdsApiException(
@@ -359,44 +314,10 @@ export class GoogleAdsClient {
    * Execute a GAQL query using SearchStream (streaming, no pagination)
    * Preferred for reporting: lower latency
    */
-  /**
-   * Send a mutate request to a Google Ads resource collection.
-   *
-   * Only the write tools call this, and they are registered only when
-   * GOOGLE_ADS_ENABLE_WRITES is set. It reuses the cached access token rather
-   * than refreshing OAuth on every call.
-   */
-  async mutate(
-    customerId: string,
-    collection: string,
-    operations: unknown[],
-    loginCustomerId?: string,
-  ): Promise<unknown> {
-    await this.ensureValidToken();
-    const cid = stripCustomerId(customerId);
-    const headers = this.getHeaders();
-    if (loginCustomerId) headers["login-customer-id"] = stripCustomerId(loginCustomerId);
-
-    const response = await fetch(
-      `${GOOGLE_ADS_API_BASE_URL}/customers/${cid}/${collection}:mutate`,
-      { method: "POST", headers, body: JSON.stringify({ operations }), redirect: "error" },
-    );
-    const body = await response.text();
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(body);
-    } catch {
-      parsed = body;
-    }
-    if (!response.ok) {
-      const detail = typeof parsed === "string" ? parsed : JSON.stringify(parsed);
-      throw new GoogleAdsApiException(detail.slice(0, 400), response.status);
-    }
-    return parsed;
-  }
-
-  async searchStream(customerId: string, gaqlQuery: string): Promise<GoogleAdsRow[]> {
+  async searchStream(customerId: string, gaqlQuery: string, scope: RequestScope = "account"): Promise<GoogleAdsRow[]> {
     const cleanCustomerId = stripCustomerId(customerId);
+    // Before manager discovery, so a refused account triggers no request at all.
+    if (scope === "account") assertUrlAccountAllowed(this.allowedAccountIds, `${GOOGLE_ADS_API_BASE_URL}/customers/${cleanCustomerId}`);
     const url = `${GOOGLE_ADS_API_BASE_URL}/customers/${cleanCustomerId}/googleAds:searchStream`;
     const manager = await this.resolveLoginCustomerId(cleanCustomerId);
 
@@ -408,7 +329,8 @@ export class GoogleAdsClient {
       },
       undefined,
       undefined,
-      manager
+      manager,
+      scope
     );
 
     // SearchStream returns an array of batches, each containing results
@@ -432,6 +354,7 @@ export class GoogleAdsClient {
     pageToken?: string
   ): Promise<{ results: GoogleAdsRow[]; nextPageToken?: string; totalResultsCount?: string }> {
     const cleanCustomerId = stripCustomerId(customerId);
+    assertUrlAccountAllowed(this.allowedAccountIds, `${GOOGLE_ADS_API_BASE_URL}/customers/${cleanCustomerId}`);
     const url = `${GOOGLE_ADS_API_BASE_URL}/customers/${cleanCustomerId}/googleAds:search`;
     const manager = await this.resolveLoginCustomerId(cleanCustomerId);
 
@@ -651,7 +574,11 @@ export class GoogleAdsClient {
    * Get all accessible customer accounts with their details
    */
   async getAllCustomers(): Promise<GoogleAdsCustomer[]> {
-    const resourceNames = await this.listAccessibleCustomers();
+    // With an allowlist, the allowed accounts are the whole visible world:
+    // managers outside it are never described, only used to reach accounts.
+    const resourceNames = this.allowedAccountIds
+      ? this.allowedAccountIds.map(id => `customers/${id}`)
+      : await this.listAccessibleCustomers();
     const customers: GoogleAdsCustomer[] = [];
 
     for (const resourceName of resourceNames) {
@@ -672,7 +599,7 @@ export class GoogleAdsClient {
    * Get client accounts under a Manager (MCC) account
    * Uses customer_client resource to list sub-accounts
    */
-  async getClientAccounts(mccId: string): Promise<GoogleAdsCustomer[]> {
+  async getClientAccounts(mccId: string, scope: RequestScope = "account"): Promise<GoogleAdsCustomer[]> {
     const cleanMccId = stripCustomerId(mccId);
     const gaql = `
       SELECT
@@ -689,7 +616,7 @@ export class GoogleAdsClient {
         AND customer_client.status = 'ENABLED'
     `;
 
-    const rows = await this.searchStream(cleanMccId, gaql);
+    const rows = await this.searchStream(cleanMccId, gaql, scope);
     const clients: GoogleAdsCustomer[] = [];
 
     for (const row of rows) {
@@ -697,8 +624,9 @@ export class GoogleAdsClient {
       if (!cc) continue;
 
       const id = String(cc.id || "");
-      // Skip the MCC itself (level 0)
+      // Skip the MCC itself (level 0), and every account outside the allowlist.
       if (id === cleanMccId) continue;
+      if (scope === "account" && !accountIsAllowed(this.allowedAccountIds, id)) continue;
 
       clients.push({
         id,
@@ -942,6 +870,9 @@ export function flattenGoogleAdsRow(row: GoogleAdsRow): GoogleAdsInsightRow {
           flat["metrics.average_cpv"] = numValue / MICRO_CURRENCY_FACTOR;
         } else if (snakeField === "trueview_average_cpv" && typeof numValue === "number") {
           flat["metrics.trueview_average_cpv"] = numValue / MICRO_CURRENCY_FACTOR;
+        } else if (snakeField === "search_lift_cost_micros" && typeof numValue === "number") {
+          // Kept beside the raw micros, like metrics.cost beside metrics.cost_micros.
+          flat["metrics.search_lift_cost"] = numValue / MICRO_CURRENCY_FACTOR;
         }
       } else if (typeof fieldValue === "object" && !Array.isArray(fieldValue)) {
         // Handle nested objects (e.g., adGroupAd.ad, adGroupCriterion.keyword)
@@ -1032,6 +963,7 @@ function camelToSnakeResource(key: string): string {
     changeStatus: "change_status",
     label: "label",
     experiment: "experiment",
+    liftMeasurementConfig: "lift_measurement_config",
     metrics: "metrics",
     segments: "segments",
   };

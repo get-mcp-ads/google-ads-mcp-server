@@ -5,13 +5,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { loadConfig } from "./config.js";
+import { loadConfig, startupNotices } from "./config.js";
 import { createServer } from "./server.js";
 import { logger } from "./core/logger.js";
+import { nodeRuntimeWarning } from "./runtime-check.js";
 
 async function main(): Promise<void> {
+  // stdout carries the MCP protocol; warnings and notices go to stderr only.
+  const runtimeWarning = nodeRuntimeWarning();
+  if (runtimeWarning) process.stderr.write(`${runtimeWarning}\n`);
+
   try {
     const config = loadConfig();
+    for (const notice of startupNotices()) process.stderr.write(`${notice}\n`);
     logger.setLevel(config.logLevel);
     const server = createServer(config);
     await server.connect(new StdioServerTransport());

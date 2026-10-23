@@ -71,9 +71,9 @@ test("REST client exposes field discovery, geo suggestions, and ad group themes"
 
     const apiCalls = calls.filter((call) => call.url !== "https://oauth2.googleapis.com/token");
     assert.deepEqual(apiCalls.map((call) => call.url), [
-      "https://googleads.googleapis.com/v25/googleAdsFields:search",
-      "https://googleads.googleapis.com/v25/geoTargetConstants:suggest",
-      "https://googleads.googleapis.com/v25/customers/1234567890:generateAdGroupThemes",
+      "https://googleads.googleapis.com/v26/googleAdsFields:search",
+      "https://googleads.googleapis.com/v26/geoTargetConstants:suggest",
+      "https://googleads.googleapis.com/v26/customers/1234567890:generateAdGroupThemes",
     ]);
     assert.deepEqual(JSON.parse(apiCalls[0].init.body), {
       query: "SELECT name",

@@ -21,7 +21,9 @@ const SOURCE = readFileSync(join(here, "..", "src", "platforms", "google-ads", "
 
 test("a manager is resolved for a customer that is not directly accessible", () => {
   assert.match(SOURCE, /private async resolveLoginCustomerId/);
-  assert.match(SOURCE, /getClientAccounts\(candidate\)/);
+  // Discovery reads the manager only to find the account; GOOGLE_ADS_ACCOUNT_IDS
+  // still decides which accounts the tools may reach.
+  assert.match(SOURCE, /getClientAccounts\(candidate, "manager-discovery"\)/);
 });
 
 test("nothing is announced for a directly accessible customer", () => {

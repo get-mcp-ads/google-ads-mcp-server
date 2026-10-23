@@ -64,16 +64,12 @@ export interface KeywordPlannerIdeasInput {
 export interface KeywordPlannerForecastInput {
   keywords: string[];
   matchType?: KeywordMatchType;
-  negativeKeywords?: string[];
-  negativeMatchType?: KeywordMatchType;
   geoTargetIds?: string[];
   languageIds?: string[];
-  network?: KeywordPlanNetwork;
   biddingStrategy?: BiddingStrategy;
   maxCpcBid?: number;
   dailyBudget?: number;
   maxCpcBidCeiling?: number;
-  conversionRate?: number;
   currencyCode?: string;
   startDate?: string;
   endDate?: string;
@@ -600,7 +596,6 @@ export function buildKeywordForecastRequest(
 } {
   const biddingStrategy = input.biddingStrategy ?? "MANUAL_CPC";
   const matchType = input.matchType ?? "BROAD";
-  const negativeMatchType = input.negativeMatchType ?? "BROAD";
   const periodDays = inclusiveDays(input.startDate, input.endDate, now);
   let apiBiddingStrategy: GenerateKeywordForecastMetricsRequest["campaign"]["biddingStrategy"];
 
@@ -647,26 +642,16 @@ export function buildKeywordForecastRequest(
         ? { startDate: input.startDate, endDate: input.endDate }
         : undefined,
       campaign: compactObject({
-        keywordPlanNetwork: input.network ?? "GOOGLE_SEARCH",
         biddingStrategy: apiBiddingStrategy,
         adGroups: [{
-          biddableKeywords: input.keywords.map((text) => ({
-            keyword: { text, matchType },
-          })),
+          keywords: input.keywords.map((text) => ({ text, matchType })),
         }],
-        geoModifiers: input.geoTargetIds
-          ? [...new Set(input.geoTargetIds)].map((id) => ({
-              geoTargetConstant: `geoTargetConstants/${id}`,
-            }))
+        geoTargetConstants: input.geoTargetIds
+          ? [...new Set(input.geoTargetIds)].map((id) => `geoTargetConstants/${id}`)
           : undefined,
         languageConstants: input.languageIds
           ? [...new Set(input.languageIds)].map((id) => `languageConstants/${id}`)
           : undefined,
-        negativeKeywords: input.negativeKeywords?.map((text) => ({
-          text,
-          matchType: negativeMatchType,
-        })),
-        conversionRate: input.conversionRate,
       }),
     }),
   };
@@ -676,33 +661,29 @@ export function normalizeKeywordForecastMetrics(
   metrics: KeywordForecastMetrics | undefined,
   periodDays: number | null
 ) {
-  const impressions = finiteNumber(metrics?.impressions);
   const clicks = finiteNumber(metrics?.clicks);
   const conversions = finiteNumber(metrics?.conversions);
   const cost = normalizeMicros(metrics?.costMicros);
   const averageCpc = normalizeMicros(metrics?.averageCpcMicros);
   const averageCpa = normalizeMicros(metrics?.averageCpaMicros);
+  // Google stopped returning a conversion rate in API v24; conversions per click is its definition.
+  const conversionRate = clicks !== null && clicks > 0 && conversions !== null
+    ? conversions / clicks
+    : null;
 
   return {
-    impressions,
     clicks,
     cost,
-    clickThroughRate: finiteNumber(metrics?.clickThroughRate),
-    clickThroughRatePercent: metrics?.clickThroughRate === undefined
-      ? null
-      : round(metrics.clickThroughRate * 100, 4),
     averageCpc,
     conversions,
-    conversionRate: finiteNumber(metrics?.conversionRate),
-    conversionRatePercent: metrics?.conversionRate === undefined
-      ? null
-      : round(metrics.conversionRate * 100, 4),
+    conversionRate: conversionRate === null ? null : round(conversionRate, 6),
+    conversionRatePercent: conversionRate === null ? null : round(conversionRate * 100, 4),
+    conversionRateSource: conversionRate === null ? null : "derived: conversions / clicks",
     averageCpa,
     dailyAverages: periodDays === null
       ? null
       : {
           days: periodDays,
-          impressions: impressions === null ? null : round(impressions / periodDays, 4),
           clicks: clicks === null ? null : round(clicks / periodDays, 4),
           cost: cost.amount === null ? null : round(cost.amount / periodDays, 6),
           conversions: conversions === null ? null : round(conversions / periodDays, 4),
@@ -940,21 +921,17 @@ export function registerGoogleAdsKeywordPlannerTools(
 
   server.tool(
     "google_ads_generate_keyword_forecast_metrics",
-    "Forecast impressions, clicks, CTR, CPC, cost, conversions, and CPA for a temporary keyword campaign. Supports targeting, negatives, match type, three bidding strategies, explicit future dates, and an optional independent per-keyword breakdown. This read-only planless RPC does not create a campaign or saved plan.",
+    "Forecast clicks, CPC, cost, conversions, and CPA for a temporary keyword campaign. Supports location and language targeting, match type, three bidding strategies, explicit future dates, and an optional independent per-keyword breakdown. This read-only planless RPC does not create a campaign or saved plan.",
     {
       customerId: customerIdSchema.describe("Google Ads serving customer ID; use a relevant client account for better estimates"),
       keywords: z.array(keywordTextSchema).min(1).max(1000),
       matchType: matchTypeSchema.optional().default("BROAD"),
-      negativeKeywords: z.array(keywordTextSchema).max(1000).optional().default([]),
-      negativeMatchType: matchTypeSchema.optional().default("BROAD"),
       geoTargetIds: z.array(numericIdSchema).max(20).optional().default([]),
       languageIds: z.array(numericIdSchema).max(10).optional().default([]),
-      network: networkSchema.optional().default("GOOGLE_SEARCH"),
       biddingStrategy: z.enum(["MANUAL_CPC", "MAXIMIZE_CLICKS", "MAXIMIZE_CONVERSIONS"]).optional().default("MANUAL_CPC"),
       maxCpcBid: currencyAmountSchema.optional().describe("Bid in standard account-currency units; required for MANUAL_CPC"),
       dailyBudget: currencyAmountSchema.optional().describe("Daily amount in standard currency units; required for maximize strategies and optional for MANUAL_CPC"),
       maxCpcBidCeiling: currencyAmountSchema.optional().describe("Optional standard-currency CPC ceiling for MAXIMIZE_CLICKS"),
-      conversionRate: z.number().finite().min(0).max(1).optional().describe("Expected conversion rate as a decimal, e.g. 0.02 for 2%"),
       currencyCode: z.string().regex(/^[A-Z]{3}$/).optional().describe("Optional ISO 4217 conversion currency; account currency is used by default"),
       startDate: isoDateSchema.optional().describe("Optional inclusive future forecast start YYYY-MM-DD; supply with endDate"),
       endDate: isoDateSchema.optional().describe("Optional inclusive forecast end YYYY-MM-DD, no more than one year ahead; supply with startDate"),
@@ -965,16 +942,12 @@ export function registerGoogleAdsKeywordPlannerTools(
       customerId,
       keywords,
       matchType,
-      negativeKeywords,
-      negativeMatchType,
       geoTargetIds,
       languageIds,
-      network,
       biddingStrategy,
       maxCpcBid,
       dailyBudget,
       maxCpcBidCeiling,
-      conversionRate,
       currencyCode,
       startDate,
       endDate,
@@ -986,16 +959,12 @@ export function registerGoogleAdsKeywordPlannerTools(
         const baseInput: KeywordPlannerForecastInput = {
           keywords,
           matchType,
-          negativeKeywords,
-          negativeMatchType,
           geoTargetIds,
           languageIds,
-          network,
           biddingStrategy,
           maxCpcBid,
           dailyBudget,
           maxCpcBidCeiling,
-          conversionRate,
           currencyCode,
           startDate,
           endDate,
@@ -1070,16 +1039,15 @@ export function registerGoogleAdsKeywordPlannerTools(
             : { googleDefault: "next Sunday through the following Saturday in the customer account time zone" },
           settings: {
             matchType,
-            negativeKeywordCount: negativeKeywords.length,
             geoTargetIds,
             languageIds,
-            network,
             biddingStrategy,
             currencyCode: currencyCode ?? "CUSTOMER_ACCOUNT_CURRENCY",
           },
           warnings,
           limitations: [
-            "Google Ads v23 returns the planless forecast at campaign level only.",
+            "Google Ads API v26 returns the planless forecast at campaign level only, for Google Search.",
+            "Since API v24 Google no longer returns impressions or click-through rate for these forecasts, and no longer accepts negative keywords, a network or an expected conversion rate. conversionRate is derived as conversions divided by clicks.",
             "keywordForecasts, when requested, simulate each keyword independently; they are not additive and can differ from the combined forecast because keywords compete and overlap.",
             "Forecasts are estimates influenced by the selected customer account, bids, budget, targeting, seasonality, and expected quality.",
           ],

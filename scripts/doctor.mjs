@@ -17,7 +17,7 @@ const MCP = {
     "GOOGLE_ADS_REFRESH_TOKEN",
   ],
   requiredEnvAlternatives: [],
-  optionalEnv: ["GOOGLE_ADS_LOGIN_CUSTOMER_ID", "LOG_LEVEL"],
+  optionalEnv: ["GOOGLE_ADS_LOGIN_CUSTOMER_ID", "GOOGLE_ADS_ACCOUNT_IDS", "GOOGLE_ADS_ENABLE_WRITES", "LOG_LEVEL"],
 };
 
 const CLAUDE_CONFIG_PATH = path.join(
@@ -259,7 +259,7 @@ async function checkReadOnlyPosture() {
   };
 }
 
-function buildWarningsAndActions({ envCheck, packageCheck, claudeCheck, readOnlyCheck }) {
+function buildWarningsAndActions({ runtimeCheck, writeCheck, allowlistCheck, envCheck, packageCheck, claudeCheck, readOnlyCheck }) {
   const warnings = [];
   const nextActions = [];
 
@@ -281,6 +281,24 @@ function buildWarningsAndActions({ envCheck, packageCheck, claudeCheck, readOnly
     nextActions.push("Add this MCP server to Claude Desktop config.");
   }
 
+  if (!runtimeCheck.ok) {
+    warnings.push(runtimeCheck.warning);
+    nextActions.push("Install Node.js 22.23.4, 24.22.1, 26.12.1 or a newer release of one of these lines.");
+  }
+
+  if (!writeCheck.ok) {
+    warnings.push("GOOGLE_ADS_ENABLE_WRITES accepts true or false. Write tools stay disabled.");
+    nextActions.push("Set GOOGLE_ADS_ENABLE_WRITES to true to enable the write tools, or remove it.");
+  } else if (writeCheck.deprecated) {
+    warnings.push("This GOOGLE_ADS_ENABLE_WRITES value still enables writes, but 3.0.0 will accept only true.");
+    nextActions.push("Set GOOGLE_ADS_ENABLE_WRITES to true.");
+  }
+
+  if (!allowlistCheck.configured) {
+    warnings.push("GOOGLE_ADS_ACCOUNT_IDS is not set. It becomes required in 3.0.0.");
+    nextActions.push("List the customer IDs this server may use in GOOGLE_ADS_ACCOUNT_IDS.");
+  }
+
   if (readOnlyCheck.findings.length > 0) {
     warnings.push("Read-only keyword scan found source terms to review.");
     nextActions.push("Review read-only posture findings; tool descriptions and compatibility text can be false positives.");
@@ -289,22 +307,58 @@ function buildWarningsAndActions({ envCheck, packageCheck, claudeCheck, readOnly
   return { warnings, nextActions };
 }
 
+// The check lives in src/runtime-check.ts and ships in the build.
+async function checkRuntime() {
+  try {
+    const { nodeRuntimeWarning } = await import("../dist/index.js");
+    const warning = nodeRuntimeWarning();
+    return { name: "nodeRuntime", ok: !warning, node: process.versions.node, ...(warning ? { warning } : {}) };
+  } catch {
+    return {
+      name: "nodeRuntime",
+      ok: false,
+      node: process.versions.node,
+      warning: "Run npm run build first, then npm run doctor again to check this Node.js release.",
+    };
+  }
+}
+
+function checkWriteFlag() {
+  const value = (process.env.GOOGLE_ADS_ENABLE_WRITES ?? "").trim();
+  const legacy = ["1", "yes", "on"].includes(value.toLowerCase()) || (value.toLowerCase() === "true" && value !== "true");
+  const enabled = value === "true" || legacy;
+  // Legacy values still enable writes in 2.x; 3.0.0 will accept only true.
+  return { name: "writeFlag", ok: enabled || ["", "false"].includes(value.toLowerCase()), enabled, deprecated: legacy };
+}
+
+function checkAccountAllowlist() {
+  const configured = Boolean((process.env.GOOGLE_ADS_ACCOUNT_IDS ?? "").trim());
+  return { name: "accountAllowlist", ok: true, configured };
+}
+
 async function main() {
+  const runtimeCheck = await checkRuntime();
+  if (runtimeCheck.warning) process.stderr.write(`${runtimeCheck.warning}\n`);
+  const writeCheck = checkWriteFlag();
+  const allowlistCheck = checkAccountAllowlist();
   const claudeCheck = await checkClaudeDesktopConfig();
   const claudeEnvPresence = new Map((claudeCheck.envKeys ?? []).map((envKey) => [envKey.name, envKey.present]));
   const envCheck = checkEnvironment(claudeEnvPresence);
   const packageCheck = await checkPackageAndBuild();
   const readOnlyCheck = await checkReadOnlyPosture();
   const { warnings, nextActions } = buildWarningsAndActions({
+    runtimeCheck,
+    writeCheck,
+    allowlistCheck,
     envCheck,
     packageCheck,
     claudeCheck,
     readOnlyCheck,
   });
-  const hardChecksOk = envCheck.ok && packageCheck.ok && claudeCheck.ok;
+  const hardChecksOk = runtimeCheck.ok && writeCheck.ok && envCheck.ok && packageCheck.ok && claudeCheck.ok;
   const result = {
     ok: hardChecksOk,
-    checks: [envCheck, packageCheck, claudeCheck, readOnlyCheck],
+    checks: [runtimeCheck, writeCheck, allowlistCheck, envCheck, packageCheck, claudeCheck, readOnlyCheck],
     warnings,
     nextActions,
   };

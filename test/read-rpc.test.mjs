@@ -79,9 +79,9 @@ test("REST client runs allowlisted POST and GET services and blocks mutation-lik
 
     const apiCalls = calls.filter((call) => call.url !== "https://oauth2.googleapis.com/token");
     assert.deepEqual(apiCalls.map((call) => call.url), [
-      "https://googleads.googleapis.com/v25/customers/1234567890:generateReachForecast",
-      "https://googleads.googleapis.com/v25:listPlannableProducts",
-      "https://googleads.googleapis.com/v25/customers/1234567890/invoices?issueYear=2026&issueMonth=JUNE",
+      "https://googleads.googleapis.com/v26/customers/1234567890:generateReachForecast",
+      "https://googleads.googleapis.com/v26:listPlannableProducts",
+      "https://googleads.googleapis.com/v26/customers/1234567890/invoices?issueYear=2026&issueMonth=JUNE",
     ]);
     assert.equal(apiCalls[0].init.method, "POST");
     assert.equal(apiCalls[0].init.redirect, "error");
