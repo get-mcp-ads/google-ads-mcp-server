@@ -2788,7 +2788,7 @@
     {
       "name": "google_ads_generate_keyword_forecast_metrics",
       "title": "google ads generate keyword forecast metrics",
-      "description": "Forecast impressions, clicks, CTR, CPC, cost, conversions, and CPA for a temporary keyword campaign. Supports targeting, negatives, match type, three bidding strategies, explicit future dates, and an optional independent per-keyword breakdown. This read-only planless RPC does not create a campaign or saved plan.",
+      "description": "Forecast clicks, CPC, cost, conversions, and CPA for a temporary keyword campaign. Supports location and language targeting, match type, three bidding strategies, explicit future dates, and an optional independent per-keyword breakdown. This read-only planless RPC does not create a campaign or saved plan.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2818,20 +2818,6 @@
             "default": "BROAD",
             "description": "Google Ads keyword match type for the forecast."
           },
-          "negativeKeywords": {
-            "type": "array",
-            "items": {
-              "$ref": "#/properties/keywords/items"
-            },
-            "maxItems": 1000,
-            "default": [],
-            "description": "Keyword phrases excluded from the keyword forecast."
-          },
-          "negativeMatchType": {
-            "$ref": "#/properties/matchType",
-            "default": "BROAD",
-            "description": "Match type applied to the negative keywords."
-          },
           "geoTargetIds": {
             "type": "array",
             "items": {
@@ -2850,15 +2836,6 @@
             "maxItems": 10,
             "default": [],
             "description": "Google Ads language constant IDs for the intended audience."
-          },
-          "network": {
-            "type": "string",
-            "enum": [
-              "GOOGLE_SEARCH",
-              "GOOGLE_SEARCH_AND_PARTNERS"
-            ],
-            "default": "GOOGLE_SEARCH",
-            "description": "Google Ads search network selector used for planning."
           },
           "biddingStrategy": {
             "type": "string",
@@ -2883,12 +2860,6 @@
           "maxCpcBidCeiling": {
             "$ref": "#/properties/maxCpcBid",
             "description": "Optional standard-currency CPC ceiling for MAXIMIZE_CLICKS"
-          },
-          "conversionRate": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1,
-            "description": "Expected conversion rate as a decimal, e.g. 0.02 for 2%"
           },
           "currencyCode": {
             "type": "string",

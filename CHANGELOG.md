@@ -3,6 +3,7 @@
 ## 2.1.0 - 2026-10-23
 
 - Add `google_ads_rename_account`, `google_ads_rename_adgroup` and `google_ads_rename_asset_group` from the hosted gateway. Each previews by default and sends the name alone on `confirm: true`.
+- Fix `google_ads_generate_keyword_forecast_metrics` for the current API: keywords, locations and languages use the request shape Google introduced in API v24. Negative keywords, a network and an expected conversion rate are no longer accepted, because Google removed them. Google no longer returns impressions or click-through rate for these forecasts; the conversion rate is derived from conversions and clicks.
 - Move from Google Ads API v25 to v26. The official v25 to v26 proto differences remove or rename no resource, field or enum this server builds. Raw GAQL follows v26.
 - Add the 15 Search Lift metrics of API v26, the `lift_measurement_config` resource, its ID and name, and the `search_lift_keyword_bundle` and `search_property` segments, with their compatibility rules.
 - Share one access token between reads and writes. A refused refresh token (`invalid_grant`, `admin_policy_enforced`) now produces one re-authorization message and no further token requests.

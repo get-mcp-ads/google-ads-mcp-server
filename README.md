@@ -296,7 +296,7 @@ Every tool is listed below. See [server-card.json](server-card.json) for complet
 | `google_ads_get_demand_gen_assets` | List Demand Gen ads (video responsive, multi-asset, carousel) with their referenced creatives resolved: stable image URLs and YouTube video IDs with embed and thumbnail URLs. |
 | `google_ads_generate_keyword_historical_metrics` | Get Keyword Planner search-volume history for supplied keywords. |
 | `google_ads_generate_keyword_ideas` | Discover Keyword Planner ideas from up to 20 seed keywords, a URL, keywords plus URL, or a whole site. |
-| `google_ads_generate_keyword_forecast_metrics` | Forecast impressions, clicks, CTR, CPC, cost, conversions, and CPA for a temporary keyword campaign. |
+| `google_ads_generate_keyword_forecast_metrics` | Forecast clicks, CPC, cost, conversions, and CPA for a temporary keyword campaign. |
 | `google_ads_search_fields` | Search Google's live GoogleAdsField catalog. |
 | `google_ads_suggest_geo_targets` | Resolve up to 25 location names or geo target IDs to Google Ads geoTargetConstants. |
 | `google_ads_generate_ad_group_themes` | Organize supplied keywords into existing Google Ads ad groups. |

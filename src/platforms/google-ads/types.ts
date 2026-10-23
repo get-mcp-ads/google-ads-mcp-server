@@ -830,32 +830,22 @@ export interface KeywordInfo {
 }
 
 export interface KeywordForecastMetrics {
-  impressions?: number;
   clicks?: number;
   costMicros?: string;
-  clickThroughRate?: number;
   averageCpcMicros?: string;
   conversions?: number;
-  conversionRate?: number;
   averageCpaMicros?: string;
 }
 
 export interface CampaignToForecast {
-  keywordPlanNetwork: KeywordPlanNetwork;
   biddingStrategy: {
     manualCpcBiddingStrategy?: { maxCpcBidMicros: string; dailyBudgetMicros?: string };
     maximizeClicksBiddingStrategy?: { dailyTargetSpendMicros: string; maxCpcBidCeilingMicros?: string };
     maximizeConversionsBiddingStrategy?: { dailyTargetSpendMicros: string };
   };
-  adGroups: Array<{
-    biddableKeywords: Array<{ keyword: KeywordInfo; maxCpcBidMicros?: string }>;
-    negativeKeywords?: KeywordInfo[];
-    maxCpcBidMicros?: string;
-  }>;
-  geoModifiers?: Array<{ geoTargetConstant: string; bidModifier?: number }>;
+  adGroups: Array<{ keywords: KeywordInfo[] }>;
+  geoTargetConstants?: string[];
   languageConstants?: string[];
-  negativeKeywords?: KeywordInfo[];
-  conversionRate?: number;
 }
 
 export interface GenerateKeywordForecastMetricsRequest {

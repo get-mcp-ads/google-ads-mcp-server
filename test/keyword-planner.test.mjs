@@ -178,18 +178,16 @@ test("idea handler rejects oversized monthly histories before any HTTP request",
   }
 });
 
-test("forecast request converts standard currency to micros and normalizes response rates", () => {
+test("forecast request follows the API v26 shape and derives the conversion rate", () => {
   const fixedNow = new Date("2026-07-16T12:00:00Z");
   const { request, periodDays } = buildKeywordForecastRequest({
     keywords: ["galerie lafayette"],
     matchType: "EXACT",
-    negativeKeywords: ["jobs"],
     geoTargetIds: ["2250"],
     languageIds: ["1002"],
     biddingStrategy: "MANUAL_CPC",
     maxCpcBid: 1.5,
     dailyBudget: 100,
-    conversionRate: 0.02,
     currencyCode: "EUR",
     startDate: "2026-08-01",
     endDate: "2026-08-31",
@@ -202,29 +200,30 @@ test("forecast request converts standard currency to micros and normalizes respo
       dailyBudgetMicros: "100000000",
     },
   });
-  assert.equal(
-    request.campaign.adGroups[0]?.biddableKeywords[0]?.keyword.matchType,
-    "EXACT"
-  );
-  assert.deepEqual(request.campaign.geoModifiers, [
-    { geoTargetConstant: "geoTargetConstants/2250" },
+  assert.deepEqual(request.campaign.adGroups, [
+    { keywords: [{ text: "galerie lafayette", matchType: "EXACT" }] },
   ]);
+  assert.deepEqual(request.campaign.geoTargetConstants, ["geoTargetConstants/2250"]);
+  // Fields Google removed in API v24 must never be sent.
+  for (const removed of ["keywordPlanNetwork", "negativeKeywords", "geoModifiers", "conversionRate"]) {
+    assert.equal(removed in request.campaign, false, removed);
+  }
+  assert.equal("biddableKeywords" in request.campaign.adGroups[0], false);
   assert.deepEqual(request.campaign.languageConstants, ["languageConstants/1002"]);
 
   const normalized = normalizeKeywordForecastMetrics({
-    impressions: 3100,
     clicks: 155,
     costMicros: "77500000",
-    clickThroughRate: 0.05,
     averageCpcMicros: "500000",
     conversions: 3.1,
-    conversionRate: 0.02,
     averageCpaMicros: "25000000",
   }, periodDays);
   assert.equal(normalized.cost.amount, 77.5);
-  assert.equal(normalized.clickThroughRatePercent, 5);
   assert.equal(normalized.conversionRatePercent, 2);
-  assert.equal(normalized.dailyAverages?.impressions, 100);
+  assert.equal(normalized.conversionRateSource, "derived: conversions / clicks");
+  assert.equal(normalized.dailyAverages?.clicks, 5);
+  assert.equal("impressions" in normalized, false);
+  assert.equal(normalizeKeywordForecastMetrics({ clicks: 0, conversions: 0 }, null).conversionRate, null);
 
   assert.throws(
     () => buildKeywordForecastRequest({ keywords: ["test"], maxCpcBid: 1.0000001 }),
@@ -255,8 +254,8 @@ test("forecast request converts standard currency to micros and normalizes respo
     geoTargetIds: ["2250", "2250"],
     languageIds: ["1002", "1002"],
   }, fixedNow);
-  assert.deepEqual(deduplicated.request.campaign.geoModifiers, [
-    { geoTargetConstant: "geoTargetConstants/2250" },
+  assert.deepEqual(deduplicated.request.campaign.geoTargetConstants, [
+    "geoTargetConstants/2250",
   ]);
   assert.deepEqual(deduplicated.request.campaign.languageConstants, [
     "languageConstants/1002",
@@ -342,12 +341,11 @@ test("REST client uses the pinned-version planless ideas and forecast endpoints 
     });
     await client.generateKeywordForecastMetrics("1234567890", {
       campaign: {
-        keywordPlanNetwork: "GOOGLE_SEARCH",
         biddingStrategy: {
           manualCpcBiddingStrategy: { maxCpcBidMicros: "1000000" },
         },
         adGroups: [{
-          biddableKeywords: [{ keyword: { text: "galerie", matchType: "BROAD" } }],
+          keywords: [{ text: "galerie", matchType: "BROAD" }],
         }],
       },
     });
@@ -362,7 +360,7 @@ test("REST client uses the pinned-version planless ideas and forecast endpoints 
       pageSize: 100,
     });
     assert.equal(
-      JSON.parse(planningCalls[1].init.body).campaign.adGroups[0].biddableKeywords[0].keyword.text,
+      JSON.parse(planningCalls[1].init.body).campaign.adGroups[0].keywords[0].text,
       "galerie"
     );
   } finally {
