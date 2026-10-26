@@ -53,7 +53,7 @@ const resources = {
   adGroupCriterionOperation: "adGroupCriteria",
   assetGroupListingGroupFilterOperation: "assetGroupListingGroupFilters",
 } as const;
-const json = z.record(z.unknown());
+const json = z.record(z.string(), z.unknown());
 const operation = z
   .object({
     kind: z.enum(

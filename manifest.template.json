@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "google-ads-mcp-server",
   "display_name": "Google Ads by getmcpads",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Google Ads MCP server: 35 read tools, 13 opt-in preview-first writes.",
   "author": {
     "name": "getmcpads",

@@ -400,7 +400,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     {
       customerId: customerIdSchema,
       resource: z.string()
-        .optional().default("campaign").describe("GAQL FROM clause resource type (campaign, ad_group, ad_group_ad, keyword_view, shopping_performance_view, asset_group, geographic_view, video, search_term_view, landing_page_view, etc.)"),
+        .prefault("campaign").describe("GAQL FROM clause resource type (campaign, ad_group, ad_group_ad, keyword_view, shopping_performance_view, asset_group, geographic_view, video, search_term_view, landing_page_view, etc.)"),
       metrics: z.array(z.string()).min(1).describe("Metric keys (e.g., impressions, clicks, cost_micros, conversions)"),
       dimensions: z.array(z.string()).optional().describe("Dimension keys (e.g., date, campaignName, device)"),
       startDate: z.string().optional().describe("Start date YYYY-MM-DD"),
@@ -410,8 +410,8 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
         "LAST_90_DAYS", "THIS_MONTH", "LAST_MONTH", "THIS_QUARTER", "LAST_QUARTER",
       ]).optional().describe("Predefined date range"),
       orderBy: z.string().optional().describe("Optional GAQL field to order by, e.g. metrics.impressions or campaign.name"),
-      orderDirection: z.enum(["ASC", "DESC"]).optional().default("DESC"),
-      limit: z.number().int().min(1).max(10000).optional().default(500),
+      orderDirection: z.enum(["ASC", "DESC"]).prefault("DESC"),
+      limit: z.number().int().min(1).max(10000).prefault(500),
     },
     async ({ customerId, resource, metrics, dimensions, startDate, endDate, datePreset, orderBy, orderDirection, limit }) => {
       try {
@@ -485,7 +485,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     {
       customerId: customerIdSchema,
       statusFilter: z.enum(["ENABLED", "PAUSED", "REMOVED"]).optional(),
-      limit: z.number().int().min(1).max(1000).optional().default(100),
+      limit: z.number().int().min(1).max(1000).prefault(100),
     },
     async ({ customerId, statusFilter, limit }) => {
       try {
@@ -506,7 +506,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       customerId: customerIdSchema,
       campaignId: z.string().optional().describe("Filter by campaign ID"),
       statusFilter: z.enum(["ENABLED", "PAUSED", "REMOVED"]).optional(),
-      limit: z.number().int().min(1).max(1000).optional().default(100),
+      limit: z.number().int().min(1).max(1000).prefault(100),
     },
     async ({ customerId, campaignId, statusFilter, limit }) => {
       try {
@@ -530,7 +530,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       customerId: customerIdSchema,
       startDate: z.string().describe("Start date YYYY-MM-DD"),
       endDate: z.string().describe("End date YYYY-MM-DD"),
-      limit: z.number().int().min(1).max(1000).optional().default(100),
+      limit: z.number().int().min(1).max(1000).prefault(100),
     },
     async ({ customerId, startDate, endDate, limit }) => {
       try {
@@ -549,7 +549,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       metrics: z.array(z.string()).min(1).describe("Metric keys to validate"),
       dimensions: z.array(z.string()).optional().describe("Dimension keys to validate"),
       resource: z.string()
-        .optional().default("campaign"),
+        .prefault("campaign"),
     },
     async ({ metrics, dimensions, resource }) => {
       try {
@@ -634,7 +634,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     "List accessible customers and, where possible, manager/client relationships from GAQL customer_client. Falls back to accessible customers if hierarchy queries are unavailable.",
     {
       managerCustomerId: loginCustomerIdSchema,
-      includeInactive: z.boolean().optional().default(false).describe("Include non-ENABLED customer_client links"),
+      includeInactive: z.boolean().prefault(false).describe("Include non-ENABLED customer_client links"),
     },
     async ({ managerCustomerId, includeInactive }) => {
       try {
@@ -730,7 +730,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     {
       customerId: customerIdSchema,
       statusFilter: z.enum(["ENABLED", "HIDDEN", "REMOVED"]).optional(),
-      limit: z.number().int().min(1).max(1000).optional().default(1000),
+      limit: z.number().int().min(1).max(1000).prefault(1000),
     },
     async ({ customerId, statusFilter, limit }) => {
       try {
@@ -791,7 +791,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       resourceType: gaqlEnumSchema.optional().describe("Optional ChangeEventResourceType filter, e.g. CAMPAIGN or AD_GROUP_AD"),
       operation: gaqlEnumSchema.optional().describe("Optional ResourceChangeOperation filter, e.g. CREATE, UPDATE, REMOVE"),
       userEmail: z.string().email().optional().describe("Optional user email filter"),
-      limit: z.number().int().min(1).max(10000).optional().default(1000),
+      limit: z.number().int().min(1).max(10000).prefault(1000),
     },
     async ({ customerId, startDate, endDate, resourceType, operation, userEmail, limit }) => {
       try {
@@ -841,8 +841,8 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     {
       customerId: customerIdSchema,
       typeFilter: gaqlEnumSchema.optional().describe("Optional RecommendationType enum filter"),
-      includeDismissed: z.boolean().optional().default(false),
-      limit: z.number().int().min(1).max(1000).optional().default(1000),
+      includeDismissed: z.boolean().prefault(false),
+      limit: z.number().int().min(1).max(1000).prefault(1000),
     },
     async ({ customerId, typeFilter, includeDismissed, limit }) => {
       try {
@@ -901,7 +901,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     {
       customerId: customerIdSchema,
       statusFilter: z.enum(["ENABLED", "REMOVED", "UNKNOWN", "UNSPECIFIED"]).optional(),
-      limit: z.number().int().min(1).max(1000).optional().default(1000),
+      limit: z.number().int().min(1).max(1000).prefault(1000),
     },
     async ({ customerId, statusFilter, limit }) => {
       try {
@@ -965,7 +965,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       startDate: isoDateSchema.optional().describe("Optional start date YYYY-MM-DD for metrics"),
       endDate: isoDateSchema.optional().describe("Optional end date YYYY-MM-DD for metrics"),
       typeFilter: gaqlEnumSchema.optional().describe("Optional BiddingStrategyType enum filter"),
-      limit: z.number().int().min(1).max(1000).optional().default(1000),
+      limit: z.number().int().min(1).max(1000).prefault(1000),
     },
     async ({ customerId, startDate, endDate, typeFilter, limit }) => {
       try {
@@ -1033,13 +1033,13 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     "Fetch search term performance from search_term_view or campaign_search_term_insight depending on reportType.",
     {
       customerId: customerIdSchema,
-      reportType: z.enum(["search_term_view", "campaign_search_term_insight"]).optional().default("search_term_view"),
+      reportType: z.enum(["search_term_view", "campaign_search_term_insight"]).prefault("search_term_view"),
       startDate: isoDateSchema.describe("Start date YYYY-MM-DD"),
       endDate: isoDateSchema.describe("End date YYYY-MM-DD"),
       campaignId: numericIdSchema.optional().describe("Optional campaign ID filter"),
       adGroupId: numericIdSchema.optional().describe("Optional ad group ID filter. Applies directly to search_term_view and via segments.ad_group for insight reports."),
       searchTermContains: z.string().min(1).optional().describe("Optional substring filter for search_term_view"),
-      limit: z.number().int().min(1).max(10000).optional().default(1000),
+      limit: z.number().int().min(1).max(10000).prefault(1000),
     },
     async ({ customerId, reportType, startDate, endDate, campaignId, adGroupId, searchTermContains, limit }) => {
       try {
@@ -1116,7 +1116,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       startDate: isoDateSchema.describe("Start date YYYY-MM-DD"),
       endDate: isoDateSchema.describe("End date YYYY-MM-DD"),
       campaignId: numericIdSchema.optional().describe("Optional campaign ID filter"),
-      limit: z.number().int().min(1).max(10000).optional().default(1000),
+      limit: z.number().int().min(1).max(10000).prefault(1000),
     },
     async ({ customerId, startDate, endDate, campaignId, limit }) => {
       try {
@@ -1185,10 +1185,10 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       assetGroupId: numericIdSchema.optional().describe("Optional asset group ID filter"),
       assetGroupIds: z.array(numericIdSchema).min(1).max(10).optional().describe("Restrict reporting to these asset groups."),
       assetId: numericIdSchema.optional().describe("Restrict reporting to one asset."),
-      daily: z.boolean().optional().default(false).describe("Segment dated performance by segments.date."),
+      daily: z.boolean().prefault(false).describe("Segment dated performance by segments.date."),
       fieldType: gaqlEnumSchema.optional().describe("Optional AssetFieldType enum filter, e.g. HEADLINE, LONG_HEADLINE, MARKETING_IMAGE"),
       statusFilter: z.enum(["ENABLED", "PAUSED", "REMOVED"]).optional(),
-      limit: z.number().int().min(1).max(10000).optional().default(1000),
+      limit: z.number().int().min(1).max(10000).prefault(1000),
     },
     async ({ customerId, startDate, endDate, metrics, campaignId, assetGroupId, assetGroupIds, assetId, daily, fieldType, statusFilter, limit }) => {
       try {
@@ -1269,7 +1269,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     "Read-only planning/forecast query for campaign, ad group, or portfolio bidding simulations. Returns simulation metadata and projected point lists when available, with a metadata fallback.",
     {
       customerId: customerIdSchema,
-      level: z.enum(["campaign", "ad_group", "bidding_strategy"]).optional().default("campaign").describe("Simulation resource level to query"),
+      level: z.enum(["campaign", "ad_group", "bidding_strategy"]).prefault("campaign").describe("Simulation resource level to query"),
       campaignId: numericIdSchema.optional().describe("Optional campaign ID filter. Applies directly to campaign simulations and as campaign context for ad group simulations."),
       adGroupId: numericIdSchema.optional().describe("Optional ad group ID filter for ad_group simulations"),
       biddingStrategyId: numericIdSchema.optional().describe("Optional portfolio bidding strategy ID filter for bidding_strategy simulations"),
@@ -1277,7 +1277,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       simulationEndDate: isoDateSchema.optional().describe("Optional maximum simulation end date YYYY-MM-DD"),
       typeFilter: gaqlEnumSchema.optional().describe("Optional SimulationType enum, e.g. BUDGET, TARGET_CPA, TARGET_ROAS, CPC_BID"),
       modificationMethod: gaqlEnumSchema.optional().describe("Optional SimulationModificationMethod enum, e.g. UNIFORM, SCALING, DEFAULT"),
-      limit: z.number().int().min(1).max(1000).optional().default(1000),
+      limit: z.number().int().min(1).max(1000).prefault(1000),
     },
     async ({ customerId, level, campaignId, adGroupId, biddingStrategyId, simulationStartDate, simulationEndDate, typeFilter, modificationMethod, limit }) => {
       try {
@@ -1433,7 +1433,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       adGroupId: numericIdSchema.optional().describe("Optional ad group ID filter"),
       searchTermContains: z.string().min(1).optional().describe("Optional search term substring filter"),
       serpType: z.enum(["ADS_AND_ORGANIC", "ADS_ONLY", "ORGANIC_ONLY", "UNKNOWN", "UNSPECIFIED"]).optional().describe("Optional search engine results page type segment filter"),
-      limit: z.number().int().min(1).max(10000).optional().default(1000),
+      limit: z.number().int().min(1).max(10000).prefault(1000),
     },
     async ({ customerId, startDate, endDate, campaignId, adGroupId, searchTermContains, serpType, limit }) => {
       try {
@@ -1512,7 +1512,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     "Read-only Merchant Center product catalog/eligibility report via shopping_product. Supports account, campaign, and ad group scopes with performance metrics when the account has Shopping/PMax e-commerce data.",
     {
       customerId: customerIdSchema,
-      scope: z.enum(["account", "campaign", "ad_group"]).optional().default("account").describe("shopping_product scope. ad_group scope requires campaignId and adGroupId."),
+      scope: z.enum(["account", "campaign", "ad_group"]).prefault("account").describe("shopping_product scope. ad_group scope requires campaignId and adGroupId."),
       startDate: isoDateSchema.optional().describe("Optional start date YYYY-MM-DD. Used only as a WHERE filter; shopping_product cannot segment by date."),
       endDate: isoDateSchema.optional().describe("Optional end date YYYY-MM-DD. Used only as a WHERE filter; shopping_product cannot segment by date."),
       campaignId: numericIdSchema.optional().describe("Campaign ID for campaign or ad_group scope"),
@@ -1522,7 +1522,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       titleContains: z.string().min(1).optional().describe("Optional product title substring filter"),
       feedLabel: z.string().min(1).optional().describe("Optional feed label filter"),
       statusFilter: z.enum(["ELIGIBLE", "ELIGIBLE_LIMITED", "NOT_ELIGIBLE", "UNKNOWN", "UNSPECIFIED"]).optional(),
-      limit: z.number().int().min(1).max(10000).optional().default(1000),
+      limit: z.number().int().min(1).max(10000).prefault(1000),
     },
     async ({ customerId, scope, startDate, endDate, campaignId, adGroupId, merchantCenterId, itemId, titleContains, feedLabel, statusFilter, limit }) => {
       try {
@@ -1641,7 +1641,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       titleContains: z.string().min(1).optional().describe("Optional product title substring filter"),
       brand: z.string().min(1).optional().describe("Optional product brand filter"),
       feedLabel: z.string().min(1).optional().describe("Optional product feed label filter"),
-      limit: z.number().int().min(1).max(10000).optional().default(1000),
+      limit: z.number().int().min(1).max(10000).prefault(1000),
     },
     async ({ customerId, startDate, endDate, campaignId, adGroupId, merchantCenterId, itemId, titleContains, brand, feedLabel, limit }) => {
       try {
@@ -1725,7 +1725,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       campaignId: numericIdSchema.optional().describe("Optional Performance Max campaign ID filter"),
       placementType: z.enum(["WEBSITE", "MOBILE_APPLICATION", "YOUTUBE_VIDEO", "YOUTUBE_CHANNEL", "GOOGLE_PRODUCTS", "UNKNOWN", "UNSPECIFIED"]).optional().describe("Optional PlacementType enum filter"),
       placementContains: z.string().min(1).optional().describe("Optional substring filter for the placement string"),
-      limit: z.number().int().min(1).max(10000).optional().default(1000),
+      limit: z.number().int().min(1).max(10000).prefault(1000),
     },
     async ({ customerId, startDate, endDate, campaignId, placementType, placementContains, limit }) => {
       try {
@@ -1790,8 +1790,8 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       campaignId: numericIdSchema.optional().describe("Optional Performance Max campaign ID filter"),
       assetGroupId: numericIdSchema.optional().describe("Optional asset group ID filter"),
       statusFilter: z.enum(["ENABLED", "PAUSED", "REMOVED"]).optional(),
-      includeTopCombinations: z.boolean().optional().default(true).describe("Also query asset_group_top_combination_view when available"),
-      limit: z.number().int().min(1).max(1000).optional().default(1000),
+      includeTopCombinations: z.boolean().prefault(true).describe("Also query asset_group_top_combination_view when available"),
+      limit: z.number().int().min(1).max(1000).prefault(1000),
     },
     async ({ customerId, startDate, endDate, campaignId, assetGroupId, statusFilter, includeTopCombinations, limit }) => {
       try {
@@ -1912,7 +1912,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       nameFilter: z.string().optional().describe("Only assets whose file name contains this text"),
       minWidth: z.number().int().min(1).optional().describe("Only images at least this wide, in pixels"),
       minHeight: z.number().int().min(1).optional().describe("Only images at least this tall, in pixels"),
-      limit: z.number().int().min(1).max(10000).optional().default(500),
+      limit: z.number().int().min(1).max(10000).prefault(500),
     },
     async ({ customerId, beforeAssetId, assetIds, nameFilter, minWidth, minHeight, limit }) => {
       try {
@@ -1963,7 +1963,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
       beforeAssetId: numericIdSchema.optional().describe("Continue the descending library before this last-seen asset ID. Use the same filters."),
       assetIds: z.array(numericIdSchema).min(1).max(8).optional().describe("Resolve these exact native asset IDs, without scanning the library."),
       nameFilter: z.string().optional().describe("Only assets whose name contains this text"),
-      limit: z.number().int().min(1).max(10000).optional().default(500),
+      limit: z.number().int().min(1).max(10000).prefault(500),
     },
     async ({ customerId, beforeAssetId, assetIds, nameFilter, limit }) => {
       try {
@@ -2012,7 +2012,7 @@ Use google-ads://metrics for available metrics, google-ads://dimensions for dime
     {
       customerId: customerIdSchema,
       campaignId: numericIdSchema.optional().describe("Optional Demand Gen campaign ID filter"),
-      limit: z.number().int().min(1).max(10000).optional().default(500),
+      limit: z.number().int().min(1).max(10000).prefault(500),
     },
     async ({ customerId, campaignId, limit }) => {
       try {

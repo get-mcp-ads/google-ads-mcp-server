@@ -169,7 +169,7 @@ export function registerGoogleAdsReadOnlyRpcTool(
     {
       operation: z.enum(READ_ONLY_OPERATION_NAMES),
       customerId: z.string().regex(/^\d[\d-]*\d$|^\d$/).optional().describe("Required for customer-scoped operations; omit for global planning catalogs"),
-      request: z.record(z.unknown()).optional().default({}).describe("Official REST JSON request body for POST operations, or query parameters for GET operations"),
+      request: z.record(z.string(), z.unknown()).prefault({}).describe("Official REST JSON request body for POST operations, or query parameters for GET operations"),
     },
     async ({ operation, customerId, request }) => {
       try {
