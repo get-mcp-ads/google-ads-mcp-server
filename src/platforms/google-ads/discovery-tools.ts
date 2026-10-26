@@ -117,7 +117,7 @@ export function registerGoogleAdsDiscoveryTools(
       selectable: z.boolean().optional(),
       filterable: z.boolean().optional(),
       sortable: z.boolean().optional(),
-      pageSize: z.number().int().min(1).max(10_000).optional().default(500),
+      pageSize: z.number().int().min(1).max(10_000).prefault(500),
       pageToken: z.string().trim().min(1).max(10_000).optional(),
     },
     async ({ query, nameContains, category, selectable, filterable, sortable, pageSize, pageToken }) => {
@@ -164,7 +164,7 @@ export function registerGoogleAdsDiscoveryTools(
     {
       locationNames: z.array(z.string().trim().min(1).max(250)).min(1).max(25).optional(),
       geoTargetIds: z.array(numericIdSchema).min(1).max(25).optional(),
-      locale: z.string().trim().regex(/^[A-Za-z]{2,3}(?:[-_][A-Za-z]{2,4})?$/, "Expected a locale such as en, fr, or pt-BR").optional().default("en"),
+      locale: z.string().trim().regex(/^[A-Za-z]{2,3}(?:[-_][A-Za-z]{2,4})?$/, "Expected a locale such as en, fr, or pt-BR").prefault("en"),
       countryCode: z.string().trim().regex(/^[A-Za-z]{2}$/, "Expected an ISO-3166 alpha-2 country code").optional().transform((value) => value?.toUpperCase()),
     },
     async ({ locationNames, geoTargetIds, locale, countryCode }) => {

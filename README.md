@@ -29,24 +29,18 @@ Run locally with your own platform credentials and a client that supports stdio 
 ## What's new
 
 <!-- release-history:start -->
-**[v2.1.0: Renames, Google Ads API v26 and Search Lift](https://github.com/get-mcp-ads/google-ads-mcp-server/releases/tag/v2.1.0) · October 23, 2026**
+**[v2.1.1: Zod 4 security update](https://github.com/get-mcp-ads/google-ads-mcp-server/releases/tag/v2.1.1) · October 26, 2026**
 
-- Add `google_ads_rename_account`, `google_ads_rename_adgroup` and `google_ads_rename_asset_group` from the hosted gateway. Each previews by default and sends the name alone on `confirm: true`.
-- Fix `google_ads_generate_keyword_forecast_metrics` for the current API: keywords, locations and languages use the request shape Google introduced in API v24. Negative keywords, a network and an expected conversion rate are no longer accepted, because Google removed them. Google no longer returns impressions or click-through rate for these forecasts; the conversion rate is derived from conversions and clicks.
-- Move from Google Ads API v25 to v26. The official v25 to v26 proto differences remove or rename no resource, field or enum this server builds. Raw GAQL follows v26.
-- Add the 15 Search Lift metrics of API v26, the `lift_measurement_config` resource, its ID and name, and the `search_lift_keyword_bundle` and `search_property` segments, with their compatibility rules.
-- Share one access token between reads and writes. A refused refresh token (`invalid_grant`, `admin_policy_enforced`) now produces one re-authorization message and no further token requests.
-- Add the optional `GOOGLE_ADS_ACCOUNT_IDS` allowlist, checked before every request and applied to account discovery. Unset, the server prints a recommendation on stderr. It becomes required in 3.0.0.
-- Keep accepting `1`, `yes` and `on` for `GOOGLE_ADS_ENABLE_WRITES`, with a deprecation line on stderr. 3.0.0 will accept only `true`.
-- Add timeouts to the write and token requests, bound every response body, and accept only numeric IDs in the simple write tools.
-- Require Node.js `^22.23.4 || ^24.22.1 || >=26.12.1`, warn on stderr at startup and in `npm run doctor` on older releases, and test Node 22, 24 and 26 in CI.
-- Update `@modelcontextprotocol/sdk` to 1.32.1 and regenerate the lockfile.
-- Publish from version tags with `release.yml`, which replaces `publish-mcp.yml`. Add Dependabot.
+- Update `zod` to 4.6.7. Every Zod release before 4.6.6 is covered by the high-severity advisory GHSA-mrhx-c7xc-m3w5: validating an oversized constrained collection can exhaust memory, and no Zod 3 release carries the fix. `npm audit --omit=dev` reports no vulnerability again.
+- Keep the Zod 3 validation behaviour. A parameter default is still validated and completed before use, so an omitted object must still supply its required fields.
+- Keep each parameter's own description when the parameter is optional or has a default. Zod 4 stores a description on the wrapped schema only, so the shared fallback description could otherwise replace it.
+- Tool names, parameters and descriptions published over MCP are unchanged. `server-card.json` is regenerated with Zod 4's JSON Schema output, which spells some constraints differently.
 
 **Earlier releases**
 
 | Version | Date | Highlights |
 | --- | --- | --- |
+| 2.1.0 | October 23, 2026 | Renames, Google Ads API v26 and Search Lift |
 | 2.0.1 | September 23, 2026 | Public repository restored |
 | 2.0.0 | September 20, 2026 | Gateway sync and security fixes |
 | 1.1.0 | September 13, 2026 | Platform capability sync and quality contracts |
@@ -75,7 +69,7 @@ The server pins **Google Ads API v26**. Raw queries sent through `google_ads_run
 This is a GitHub source release. npm and MCP Registry versions are published separately. The commands below select this exact version; unpinned `npx` examples later in this document select the version currently available on npm.
 
 ```bash
-git clone --branch v2.1.0 --depth 1 https://github.com/get-mcp-ads/google-ads-mcp-server.git
+git clone --branch v2.1.1 --depth 1 https://github.com/get-mcp-ads/google-ads-mcp-server.git
 cd google-ads-mcp-server
 npm ci
 npm run build

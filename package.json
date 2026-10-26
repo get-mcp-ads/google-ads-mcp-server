@@ -1,6 +1,6 @@
 {
   "name": "@getmcpads/google-ads-mcp-server",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "mcpName": "com.getmcpads/google-ads",
   "description": "Google Ads MCP server: 35 read tools, 13 opt-in preview-first writes.",
   "license": "Apache-2.0",
@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
-    "zod": "^3.24.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",

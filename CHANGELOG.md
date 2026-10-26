@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.1 - 2026-10-26 - Zod 4 security update
+- Update `zod` to 4.6.7. Every Zod release before 4.6.6 is covered by the high-severity advisory GHSA-mrhx-c7xc-m3w5: validating an oversized constrained collection can exhaust memory, and no Zod 3 release carries the fix. `npm audit --omit=dev` reports no vulnerability again.
+- Keep the Zod 3 validation behaviour. A parameter default is still validated and completed before use, so an omitted object must still supply its required fields.
+- Keep each parameter's own description when the parameter is optional or has a default. Zod 4 stores a description on the wrapped schema only, so the shared fallback description could otherwise replace it.
+- Tool names, parameters and descriptions published over MCP are unchanged. `server-card.json` is regenerated with Zod 4's JSON Schema output, which spells some constraints differently.
+
 ## 2.1.0 - 2026-10-23 - Renames, Google Ads API v26 and Search Lift
 - Add `google_ads_rename_account`, `google_ads_rename_adgroup` and `google_ads_rename_asset_group` from the hosted gateway. Each previews by default and sends the name alone on `confirm: true`.
 - Fix `google_ads_generate_keyword_forecast_metrics` for the current API: keywords, locations and languages use the request shape Google introduced in API v24. Negative keywords, a network and an expected conversion rate are no longer accepted, because Google removed them. Google no longer returns impressions or click-through rate for these forecasts; the conversion rate is derived from conversions and clicks.

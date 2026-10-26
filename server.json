@@ -3,7 +3,7 @@
   "name": "com.getmcpads/google-ads",
   "title": "Google Ads",
   "description": "Google Ads MCP server: 35 read tools, 13 opt-in preview-first writes.",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "websiteUrl": "https://www.getmcpads.com/tools/google-ads",
   "repository": {
     "url": "https://github.com/get-mcp-ads/google-ads-mcp-server",
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@getmcpads/google-ads-mcp-server",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "transport": {
         "type": "stdio"
       },
