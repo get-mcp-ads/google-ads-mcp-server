@@ -1,0 +1,87 @@
+{
+  "name": "@getmcpads/google-ads-mcp-server",
+  "version": "2.1.2",
+  "mcpName": "com.getmcpads/google-ads",
+  "description": "Google Ads MCP server: 35 read tools, 13 opt-in preview-first writes.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "google-ads-mcp": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx watch src/cli.ts",
+    "doctor": "node scripts/doctor.mjs",
+    "start": "node dist/cli.js",
+    "test": "tsx --test test/*.test.mjs && npm run test:unit",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run build && node scripts/generate-catalog.mjs && npm test",
+    "test:unit": "vitest run",
+    "catalog": "npm run build && node scripts/generate-catalog.mjs",
+    "bundle": "npm run catalog && node scripts/build-mcpb.mjs",
+    "release-history": "node scripts/release-history.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.1.11"
+  },
+  "engines": {
+    "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
+  },
+  "files": [
+    "dist/",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "server-card.json",
+    "server.json",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "google-ads",
+    "google-ads-api",
+    "gaql",
+    "keyword-planner",
+    "advertising",
+    "marketing-analytics",
+    "claude",
+    "chatgpt",
+    "cursor",
+    "ai-agent"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/get-mcp-ads/google-ads-mcp-server.git"
+  },
+  "homepage": "https://www.getmcpads.com/tools/google-ads",
+  "bugs": {
+    "url": "https://github.com/get-mcp-ads/google-ads-mcp-server/issues"
+  },
+  "author": "getmcpads (https://www.getmcpads.com)",
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,16 @@
+google-ads-mcp-server
+Copyright 2026 GetMCPAds
+
+This product includes software developed at GetMCPAds (https://www.getmcpads.com).
+
+An open-source Model Context Protocol server for the Google Ads API.
+It is self-hosted and unaffiliated with Google.
+
+GetMCPAds also runs a managed gateway that covers Google Ads alongside
+Meta Ads, TikTok Ads, Pinterest Ads, GA4 and Search Console, with hosted
+OAuth and cross-platform reporting: https://www.getmcpads.com
+
+---
+
+Google, Google Ads and Google Ads API are trademarks of Google LLC. This
+project is not affiliated with, endorsed by, or sponsored by Google LLC.
